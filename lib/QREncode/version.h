@@ -20,6 +20,8 @@ namespace QR
 			HIGH
 		};
 		int GETBITSERROR(ERROR err);
+
+		
 	};
 }
 
