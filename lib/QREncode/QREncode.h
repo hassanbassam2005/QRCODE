@@ -47,8 +47,7 @@ namespace QR
 
             // Function to check if the given input string consists only of numeric characters (digits).
             // It returns true if the input is numeric, and false otherwise.
-            template<typename InputType>
-            static bool IS_NUMERIC(InputType input);
+            static bool IS_NUMERIC(const char* input);
 
             // Returns the number of bits required to represent the mode indicator for QR code segments.
             // The mode indicator specifies the encoding mode of the data (e.g., numeric, alphanumeric, byte).
@@ -163,13 +162,12 @@ bool QR::ENCODE::MODE::IS_ALPHANUMERIC(std::string input)
 
 // Function to check if the given input string consists only of numeric characters (digits).
 // Takes a C-style string 'input' as a parameter.
-template<typename InputType>
-bool QR::ENCODE::MODE::IS_NUMERIC(InputType input)
+bool QR::ENCODE::MODE::IS_NUMERIC(const char* input)
 {
     // Loop through each character in the input string until the null terminator is reached.
-    if (typeid(input) != typeid(int))
-        return false;
-    // If all characters are numeric, return true.
+    for (const char* p = input; *p; ++p) {
+        if (*p < '0' || *p > '9') return false;
+    }
     return true;
 }
 
@@ -195,6 +193,8 @@ int QR::ENCODE::MODE::CHAR_COUNTER_BITS(int version) const
 // and returns an ENCODE object with the encoding mode set to NUMERIC.
 QR::ENCODE QR::ENCODE::MODE::NUMERIC_TO_BINARY(const char* input)
 {
+    int num_counter = 0;
+    int data_number = 0;
     // Vector to hold the binary representation of the input.
     std::vector<bool> buffer;
 
@@ -207,12 +207,41 @@ QR::ENCODE QR::ENCODE::MODE::NUMERIC_TO_BINARY(const char* input)
 
     // Append the bits of the input to the BITBUFFER. 
     // The input is cast to a uint32_t to ensure proper bit representation.
-    for(;*input != '\0';input++)
-     bit.APPEND_BITS(static_cast<std::uint32_t>(*input));
+    for (int group = 0; *input != '\0'; input++) {
+        // Skip to next character after processing three digits
+        group++;
 
+        // Only attempt to read three characters if they exist
+        if (group == 3) {
+            // Convert the last three characters to an integer and append
+            std::uint32_t num = 0;
+            // Ensure you don't go out of bounds
+            for (int i = 0; i < 3; i++) {
+                if (*(input - i) >= '0' && *(input - i) <= '9') {
+                    num = num * 10 + (*(input - i) - '0');
+                }
+            }
+            bit.APPEND_BITS(num, 10); // Append as 10 bits
+            group = 0; // Reset the group counter
+        }
+
+
+        // Handle any remaining digits (1 or 2 digits)
+        if (group > 0) {
+            std::uint32_t num = 0;
+            // Ensure you don't go out of bounds
+            for (int i = 0; i < group; i++) {
+                if (*(input - group + i) >= '0' && *(input - group + i) <= '9') {
+                    num = num * 10 + (*(input - group + i) - '0');
+                }
+            }
+            bit.APPEND_BITS(num, group * 3 + 1); // Adjust bit length for remaining digits
+        }
+    }
+    
     // Create and return an ENCODE object with the encoding mode set to NUMERIC,
     // the size of the buffer, and the buffer's contents moved into the ENCODE object.
-    return ENCODE(NUMERIC,buffer.size(), bit);
+    return ENCODE(NUMERIC,buffer.size(), std::move(bit));
 }
 
 

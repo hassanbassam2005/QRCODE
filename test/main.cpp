@@ -48,7 +48,7 @@ static void testing_Mode_()
 
 	// Testing the 'IS_NUMERIC' function from the ENCODE::MODE class.
 	// Check if the string "2" is numeric.
-	bool truthy_N = ENCODE::MODE::IS_NUMERIC(2);
+	bool truthy_N = ENCODE::MODE::IS_NUMERIC("2");
 	if (truthy_N == false) {
 		std::cout << "false"; // Output 'false' if the string is not numeric.
 	}
