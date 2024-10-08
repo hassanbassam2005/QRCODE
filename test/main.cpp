@@ -110,6 +110,11 @@ static void testing_Mode_Byte()
 	std::cout << encoder.SIZE_GETTER() << std::endl;
 }
 
+static void tetsing_Version()
+{
+
+}
+
 int main()
 {
 	//testing_buffer();

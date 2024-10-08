@@ -39,7 +39,7 @@ namespace QR
             static const MODE ALPHANUMERIC;  // Alphanumeric mode (0x2)
             static const MODE BYTE;          // Byte mode (0x4)
             static const MODE KANJI;         // Kanji mode (0x8)
-
+            static const MODE ECI;
             // Function to check if the given input string consists only of alphanumeric characters (letters and digits).
             // It returns true if the input is alphanumeric, and false otherwise.
             static bool IS_ALPHANUMERIC(const char* input);
@@ -71,6 +71,8 @@ namespace QR
             // The function takes an input of type InputType and returns an ENCODE object
             // that contains the binary representation of the byte input.
             static ENCODE BYTE_TO_BINARY(const std::vector<std::uint8_t>& input);
+           
+            static ENCODE ECI_TO_BINARY(long input);
 
             static std::vector<ENCODE> MODE_CHOOSER(const char* input);
             
@@ -82,7 +84,7 @@ namespace QR
 
         // Integer that counts the number of bits processed or currently being tracked.
         // This can be useful for managing the encoding process and ensuring correct bit alignment.
-        size_t Bit_Counter;
+        int Bit_Counter;
             
         // Constant vector of boolean values that holds the encoded data.
         // Using a const vector prevents modification of the data after it is set,
@@ -94,7 +96,7 @@ namespace QR
         // an integer bit counter, and a reference to a vector of boolean values.
         // The vector is passed by reference, allowing the constructor to use the existing vector
         // without making a copy, which can be more efficient.
-        ENCODE(const MODE& mode, size_t bit_counter, BITBUFFER<std::vector<std::uint8_t>>& data) :
+        ENCODE(const MODE& mode, int bit_counter, BITBUFFER<std::vector<std::uint8_t>>& data) :
             Mode(&mode), Bit_Counter(bit_counter), Data(data)
         {
             if (bit_counter < 0)
@@ -105,19 +107,17 @@ namespace QR
         // an integer bit counter, and an rvalue reference to a vector of boolean values.
         // This constructor uses std::move to transfer ownership of the vector, allowing the
         // constructor to take a temporary vector and avoid unnecessary copies.
-        ENCODE(const MODE& mode, size_t bit_counter, BITBUFFER<std::vector<std::uint8_t>>&& data) :
+        ENCODE(const MODE& mode, int bit_counter, BITBUFFER<std::vector<std::uint8_t>>&& data) :
             Mode(&mode), Bit_Counter(bit_counter), Data(std::move(data)) 
         {
             if (bit_counter < 0)
                 throw std::domain_error("Invalid value");
         }
 
-        
-
         const MODE* MODE_GETTER();
         BITBUFFER<std::vector<std::uint8_t>> DATA_GETTER() const;
         size_t SIZE_GETTER() const;
-        
+        int GET_TOTAL_BITS(const std::vector<ENCODE>& segments, int version);
     };
 } // End of QR namespace
 
@@ -136,6 +136,8 @@ const QR::ENCODE::MODE QR::ENCODE::MODE::BYTE(0x4, 8, 16, 16);
 
 // Kanji mode: mode indicator is 0x8, character count bits for version groups (8, 10, 12)
 const QR::ENCODE::MODE QR::ENCODE::MODE::KANJI(0x8, 8, 10, 12);
+
+const QR::ENCODE::MODE QR::ENCODE::MODE::ECI(0x7, 0, 0, 0);
 
 // Alphanumeric string: This constant string contains the characters allowed in the alphanumeric mode of QR code encoding.
 // The characters are listed in order of their respective index values, which are used to convert characters to binary
@@ -225,7 +227,7 @@ QR::ENCODE QR::ENCODE::MODE::NUMERIC_TO_BINARY(const char* input)
     
     // Create and return an ENCODE object with the encoding mode set to NUMERIC,
     // the size of the buffer, and the buffer's contents moved into the ENCODE object.
-    return ENCODE(NUMERIC,buffer.size(), std::move(bit));
+    return ENCODE(NUMERIC,counter, std::move(bit));
 }
 
 
@@ -259,14 +261,12 @@ QR::ENCODE QR::ENCODE::MODE::ALPHANUMERIC_TO_BINARY(const char* input)
         bb.APPEND_BITS(static_cast<std::uint32_t>(accumData), 6);
     // Create and return an ENCODE object with the encoding mode set to NUMERIC,
     // the size of the buffer, and the buffer's contents moved into the ENCODE object.
-    return ENCODE(MODE::NUMERIC, buffer.size(), std::move(bb));
+    return ENCODE(MODE::NUMERIC, counter, std::move(bb));
 }
 
 
 QR::ENCODE QR::ENCODE::MODE::BYTE_TO_BINARY(const std::vector<std::uint8_t>& input)
 {
-
-    int num = 0;
     // Vector to hold the binary representation of the input.
     std::vector<std::uint8_t> buffer;
 
@@ -280,7 +280,29 @@ QR::ENCODE QR::ENCODE::MODE::BYTE_TO_BINARY(const std::vector<std::uint8_t>& inp
         bit.APPEND_BITS(b,8);
     }
 
-    return ENCODE(MODE::NUMERIC, buffer.size(), std::move(bit));
+    return ENCODE(MODE::NUMERIC, static_cast<int>(input.size()), std::move(bit));
+}
+
+QR::ENCODE QR::ENCODE::MODE::ECI_TO_BINARY(long input)
+{
+    std::vector<std::uint8_t> buffer;
+
+    BITBUFFER<std::vector<std::uint8_t>> bit(buffer);
+
+    if (input < 0) throw std::domain_error("ECI value is invalid");
+    else if (input < (1 << 7)) bit.APPEND_BITS(static_cast<std::int32_t>(input), 8);
+    else if (input < (1 << 14))
+    {
+        bit.APPEND_BITS(2, 2);
+        bit.APPEND_BITS(static_cast<std::int32_t>(input), 14);
+    }
+    else if (input < 1000000L)
+    {
+        bit.APPEND_BITS(6, 3);
+        bit.APPEND_BITS(static_cast<std::int32_t>(input), 21);
+    }
+    else throw std::domain_error("ECI value is invalid");
+    return ENCODE(MODE::ECI, 0, std::move(bit));
 }
 
 std::vector<QR::ENCODE> QR::ENCODE::MODE::MODE_CHOOSER(const char* input)
@@ -309,15 +331,30 @@ std::vector<QR::ENCODE> QR::ENCODE::MODE::MODE_CHOOSER(const char* input)
 
 
 // Getter function to return the binary data buffer.
-BITBUFFER<std::vector<std::uint8_t>> QR::ENCODE::DATA_GETTER() const
+inline BITBUFFER<std::vector<std::uint8_t>> QR::ENCODE::DATA_GETTER() const
 {
     return Data;
 }
 
 // Getter function to return the size of the bit counter.
-size_t QR::ENCODE::SIZE_GETTER() const
+inline size_t QR::ENCODE::SIZE_GETTER() const
 {
     return Bit_Counter;
+}
+
+inline int QR::ENCODE::GET_TOTAL_BITS(const std::vector<ENCODE>& segments, int version)
+{
+    int result = 0;
+    for (const ENCODE& segs : segments)
+    {
+        int ccbits = segs.Mode->CHAR_COUNTER_BITS(version);
+        if(segs.Bit_Counter >= (1L<<ccbits)) return -1;
+        if (4 + ccbits > INT_MAX - result) return -1;
+        result += 4 + ccbits;
+        if (segs.SIZE_GETTER() > static_cast<unsigned int>(INT_MAX - result)) return -1;
+        result += static_cast<int>(segs.SIZE_GETTER());
+    }
+    return result;
 }
 
 // Getter function to return the encoding mode.
