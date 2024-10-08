@@ -4,7 +4,6 @@
 #include <iostream>
 #include <cstring>
 #include <vector>
-#include <typeinfo>
 #include"../../lib/BitBuffer/BitBuffer.h"
 
 
@@ -63,7 +62,6 @@ namespace QR
             // that contains the binary representation of the numeric input.
             static ENCODE NUMERIC_TO_BINARY(const char* input);
 
-            static ENCODE NUMERIC_TO_BINARY(long int input);
             // Function to convert an alphanumeric input of any type to a binary representation.
             // The function takes an input of type InputType and returns an ENCODE object
             // that contains the binary representation of the alphanumeric input.
@@ -72,7 +70,7 @@ namespace QR
             // Function to convert a byte input of any type to a binary representation.
             // The function takes an input of type InputType and returns an ENCODE object
             // that contains the binary representation of the byte input.
-            static ENCODE BYTE_TO_BINARY(const char* input);
+            static ENCODE BYTE_TO_BINARY(const std::vector<std::uint8_t>& input);
 
             static std::vector<ENCODE> MODE_CHOOSER(const char* input);
             
@@ -89,14 +87,14 @@ namespace QR
         // Constant vector of boolean values that holds the encoded data.
         // Using a const vector prevents modification of the data after it is set,
         // ensuring that the encoded information remains unchanged throughout the object's lifetime.
-        BITBUFFER<std::vector<bool>> Data;
+        BITBUFFER<std::vector<std::uint8_t>> Data;
 
     public:
         // Constructor that initializes the ENCODE object with a constant reference to a MODE object,
         // an integer bit counter, and a reference to a vector of boolean values.
         // The vector is passed by reference, allowing the constructor to use the existing vector
         // without making a copy, which can be more efficient.
-        ENCODE(const MODE& mode, size_t bit_counter, BITBUFFER<std::vector<bool>>& data) :
+        ENCODE(const MODE& mode, size_t bit_counter, BITBUFFER<std::vector<std::uint8_t>>& data) :
             Mode(&mode), Bit_Counter(bit_counter), Data(data)
         {
             if (bit_counter < 0)
@@ -107,7 +105,7 @@ namespace QR
         // an integer bit counter, and an rvalue reference to a vector of boolean values.
         // This constructor uses std::move to transfer ownership of the vector, allowing the
         // constructor to take a temporary vector and avoid unnecessary copies.
-        ENCODE(const MODE& mode, size_t bit_counter, BITBUFFER<std::vector<bool>>&& data) :
+        ENCODE(const MODE& mode, size_t bit_counter, BITBUFFER<std::vector<std::uint8_t>>&& data) :
             Mode(&mode), Bit_Counter(bit_counter), Data(std::move(data)) 
         {
             if (bit_counter < 0)
@@ -117,7 +115,7 @@ namespace QR
         
 
         const MODE* MODE_GETTER();
-        BITBUFFER<std::vector<bool>> DATA_GETTER() const;
+        BITBUFFER<std::vector<std::uint8_t>> DATA_GETTER() const;
         size_t SIZE_GETTER() const;
         
     };
@@ -143,7 +141,7 @@ const QR::ENCODE::MODE QR::ENCODE::MODE::KANJI(0x8, 8, 10, 12);
 // The characters are listed in order of their respective index values, which are used to convert characters to binary
 // when encoding an alphanumeric string into a QR code. 
 // Each character is encoded as a value between 0 and 44 (inclusive), as per the QR code alphanumeric mode specification.
-const std::string S_ALPHANUMERIC = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ $%*+-./:";
+const char* S_ALPHANUMERIC = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ $%*+-./:";
 
 // Function to check if the given input string consists only of alphanumeric characters (letters and digits).
 // Takes a C-style string 'input' as a parameter.
@@ -154,7 +152,7 @@ bool QR::ENCODE::MODE::IS_ALPHANUMERIC(const char* input)
     {
         // Check if the current character is not found in the predefined alphanumeric string (S_ALPHANUMERIC).
         // If not found, return false indicating the input is not entirely alphanumeric.
-        if (S_ALPHANUMERIC.find(*input) == std::string::npos)
+        if (!std::strchr(S_ALPHANUMERIC,*input))
             return false;
     }
     // If all characters are alphanumeric, return true.
@@ -197,10 +195,10 @@ QR::ENCODE QR::ENCODE::MODE::NUMERIC_TO_BINARY(const char* input)
     int counter = 0;
     int datas = 0;
     // Vector to hold the binary representation of the input.
-    std::vector<bool> buffer;
+    std::vector<std::uint8_t> buffer;
 
     // Create a BITBUFFER object that manages appending bits to the buffer.
-    BITBUFFER<std::vector<bool>> bit(buffer);
+    BITBUFFER<std::vector<std::uint8_t>> bit(buffer);
 
     // Append the bits of the input to the BITBUFFER. 
     // The input is cast to a uint32_t to ensure proper bit representation.
@@ -227,46 +225,59 @@ QR::ENCODE QR::ENCODE::MODE::NUMERIC_TO_BINARY(const char* input)
     
     // Create and return an ENCODE object with the encoding mode set to NUMERIC,
     // the size of the buffer, and the buffer's contents moved into the ENCODE object.
-    return ENCODE(NUMERIC,buffer.size(), bit);
+    return ENCODE(NUMERIC,buffer.size(), std::move(bit));
 }
+
 
 QR::ENCODE QR::ENCODE::MODE::ALPHANUMERIC_TO_BINARY(const char* input)
 {
+    int counter = 0;
     // Vector to hold the binary representation of the input.
-    std::vector<bool> buffer;
+    std::vector<std::uint8_t> buffer;
 
     // Create a BITBUFFER object that manages appending bits to the buffer.
-    BITBUFFER<std::vector<bool>> bit(buffer);
+    BITBUFFER<std::vector<std::uint8_t>> bb(buffer);
 
     // Validate if the input is numeric. If not, throw an exception.
-    if (!IS_ALPHANUMERIC(input))
-        throw std::domain_error("Invalid value");
-
-    // Append the bits of the input to the BITBUFFER. 
-    // The input is cast to a uint32_t to ensure proper bit representation.
-    for (; *input != '\0'; input++)
-    {
-        bit.APPEND_BITS(static_cast<std::uint32_t>(*input));
+   
+    int accumData = 0;
+    int accumCount = 0;
+    int charCount = 0;
+    for (; *input != '\0'; input++, charCount++) {
+        const char *temp = std::strchr(S_ALPHANUMERIC, *input);
+        if (temp == nullptr)
+            throw std::domain_error("String contains unencodable characters in alphanumeric mode");
+        accumData = accumData * 45 + static_cast<int>(temp - S_ALPHANUMERIC);
+        accumCount++;
+        if (accumCount == 2) {
+            bb.APPEND_BITS(static_cast<std::uint32_t>(accumData),11);
+            accumData = 0;
+            accumCount = 0;
+        }
     }
+    if (accumCount > 0)  // 1 character remaining;
+        bb.APPEND_BITS(static_cast<std::uint32_t>(accumData), 6);
     // Create and return an ENCODE object with the encoding mode set to NUMERIC,
     // the size of the buffer, and the buffer's contents moved into the ENCODE object.
-    return ENCODE(MODE::NUMERIC, buffer.size(), std::move(bit));
+    return ENCODE(MODE::NUMERIC, buffer.size(), std::move(bb));
 }
 
 
-QR::ENCODE QR::ENCODE::MODE::BYTE_TO_BINARY(const char* input)
+QR::ENCODE QR::ENCODE::MODE::BYTE_TO_BINARY(const std::vector<std::uint8_t>& input)
 {
+
+    int num = 0;
     // Vector to hold the binary representation of the input.
-    std::vector<bool> buffer;
+    std::vector<std::uint8_t> buffer;
 
     // Create a BITBUFFER object that manages appending bits to the buffer.
-    BITBUFFER<std::vector<bool>> bit(buffer);
+    BITBUFFER<std::vector<std::uint8_t>> bit(buffer);
 
     // Append the bits of the input to the BITBUFFER. 
     // The input is cast to a uint32_t to ensure proper bit representation.
-    for (; *input != '\0'; input++)
+    for (std::uint8_t b : input)
     {
-        bit.APPEND_BITS(static_cast<std::uint32_t>(*input),8);
+        bit.APPEND_BITS(b,8);
     }
 
     return ENCODE(MODE::NUMERIC, buffer.size(), std::move(bit));
@@ -284,7 +295,13 @@ std::vector<QR::ENCODE> QR::ENCODE::MODE::MODE_CHOOSER(const char* input)
     else if (IS_ALPHANUMERIC(input)) Chooser.push_back(ALPHANUMERIC_TO_BINARY(input));
     // For other inputs, treat as byte and convert to binary.
     else
-                                     Chooser.push_back(BYTE_TO_BINARY(input));
+    {
+        std::vector<std::uint8_t> bytes;
+        for (; *input != '\0'; input++)
+            bytes.push_back(static_cast<std::uint8_t>(*input));
+        Chooser.push_back(BYTE_TO_BINARY(bytes));
+    }
+                                     
    // Return the vector of chosen ENCODE objects.
    return Chooser;
 }
@@ -292,7 +309,7 @@ std::vector<QR::ENCODE> QR::ENCODE::MODE::MODE_CHOOSER(const char* input)
 
 
 // Getter function to return the binary data buffer.
-BITBUFFER<std::vector<bool>> QR::ENCODE::DATA_GETTER() const
+BITBUFFER<std::vector<std::uint8_t>> QR::ENCODE::DATA_GETTER() const
 {
     return Data;
 }

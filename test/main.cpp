@@ -71,8 +71,8 @@ static void testing_Mode_()
 static void testing_Mode_Alphanumeric_Numeric()
 {
 	QR::ENCODE encoder = QR::ENCODE::MODE::ALPHANUMERIC_TO_BINARY("Y6");
-	BITBUFFER<std::vector<bool>> Enca = encoder.DATA_GETTER();
-	const std::vector<bool> binaryData = Enca.BUFFER_GETTER();
+	BITBUFFER<std::vector<std::uint8_t>> Enca = encoder.DATA_GETTER();
+	const std::vector<std::uint8_t>& binaryData = Enca.BUFFER_GETTER();
 	for (bool bit : binaryData) {
 		std::cout << bit;
 	}
@@ -86,8 +86,8 @@ static void testing_Mode_Alphanumeric_Numeric()
 static void testing_Mode_Numeric()
 {
 	QR::ENCODE encoder = QR::ENCODE::MODE::NUMERIC_TO_BINARY("5134");
-	BITBUFFER<std::vector<bool>> Enca = encoder.DATA_GETTER();
-	const std::vector<bool>& binaryData = Enca.BUFFER_GETTER();
+	BITBUFFER<std::vector<std::uint8_t>> Enca = encoder.DATA_GETTER();
+	const std::vector<std::uint8_t>& binaryData = Enca.BUFFER_GETTER();
 	for (bool bit : binaryData) {
 		std::cout << bit;
 	}
@@ -96,12 +96,25 @@ static void testing_Mode_Numeric()
 	std::cout << encoder.SIZE_GETTER() << std::endl;
 }
 
+static void testing_Mode_Byte()
+{
+	std::vector<std::uint8_t> input = { 0x48, 0x65, 0x6C, 0x6C, 0x6F };
+	QR::ENCODE encoder = QR::ENCODE::MODE::BYTE_TO_BINARY(input);
+	BITBUFFER<std::vector<std::uint8_t>> Enca = encoder.DATA_GETTER();
+	const std::vector<std::uint8_t>& binaryData = Enca.BUFFER_GETTER();
+	for (bool bit : binaryData) {
+		std::cout << bit;
+	}
+	std::cout << std::endl;
 
+	std::cout << encoder.SIZE_GETTER() << std::endl;
+}
 
 int main()
 {
 	//testing_buffer();
 	//testing_Mode_();
-	testing_Mode_Numeric();
+	//testing_Mode_Numeric();
 	//testing_Mode_Alphanumeric_Numeric();
+	testing_Mode_Byte();
 }

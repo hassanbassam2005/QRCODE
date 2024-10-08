@@ -39,7 +39,7 @@ public:
     {
         // Calculate the minimum number of bits required to represent the value.
         int length = static_cast<int>(std::log2(value) + 1);
-
+    
         // Validate that the calculated length is within valid bounds (0 to 31).
         if (length < 0 || length > 31)
             throw std::domain_error("Value out of range");
