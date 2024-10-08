@@ -43,7 +43,7 @@ namespace QR
 
             // Function to check if the given input string consists only of alphanumeric characters (letters and digits).
             // It returns true if the input is alphanumeric, and false otherwise.
-            static bool IS_ALPHANUMERIC(std::string input);
+            static bool IS_ALPHANUMERIC(const char* input);
 
             // Function to check if the given input string consists only of numeric characters (digits).
             // It returns true if the input is numeric, and false otherwise.
@@ -63,6 +63,7 @@ namespace QR
             // that contains the binary representation of the numeric input.
             static ENCODE NUMERIC_TO_BINARY(const char* input);
 
+            static ENCODE NUMERIC_TO_BINARY(long int input);
             // Function to convert an alphanumeric input of any type to a binary representation.
             // The function takes an input of type InputType and returns an ENCODE object
             // that contains the binary representation of the alphanumeric input.
@@ -146,14 +147,14 @@ const std::string S_ALPHANUMERIC = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ $%*+-./
 
 // Function to check if the given input string consists only of alphanumeric characters (letters and digits).
 // Takes a C-style string 'input' as a parameter.
-bool QR::ENCODE::MODE::IS_ALPHANUMERIC(std::string input)
+bool QR::ENCODE::MODE::IS_ALPHANUMERIC(const char* input)
 {
     // Loop through each character in the input string until the null terminator is reached.
-    for (const auto& c : input)
+    for (;*input != '\0';input++)
     {
         // Check if the current character is not found in the predefined alphanumeric string (S_ALPHANUMERIC).
         // If not found, return false indicating the input is not entirely alphanumeric.
-        if (S_ALPHANUMERIC.find(c) == std::string::npos)
+        if (S_ALPHANUMERIC.find(*input) == std::string::npos)
             return false;
     }
     // If all characters are alphanumeric, return true.
@@ -193,57 +194,41 @@ int QR::ENCODE::MODE::CHAR_COUNTER_BITS(int version) const
 // and returns an ENCODE object with the encoding mode set to NUMERIC.
 QR::ENCODE QR::ENCODE::MODE::NUMERIC_TO_BINARY(const char* input)
 {
-    int num_counter = 0;
-    int data_number = 0;
+    int counter = 0;
+    int datas = 0;
     // Vector to hold the binary representation of the input.
     std::vector<bool> buffer;
 
     // Create a BITBUFFER object that manages appending bits to the buffer.
     BITBUFFER<std::vector<bool>> bit(buffer);
 
-    // Validate if the input is numeric. If not, throw an exception.
-    if (!IS_NUMERIC(input))
-        throw std::domain_error("Invalid value");
-
     // Append the bits of the input to the BITBUFFER. 
     // The input is cast to a uint32_t to ensure proper bit representation.
-    for (int group = 0; *input != '\0'; input++) {
-        // Skip to next character after processing three digits
-        group++;
+    for (; *input != '\0'; input++)
+    {
+        char c = *input;
+        // Validate if the input is numeric. If not, throw an exception.
+        if (!IS_NUMERIC(input))
+            throw std::domain_error("Invalid value");
 
-        // Only attempt to read three characters if they exist
-        if (group == 3) {
-            // Convert the last three characters to an integer and append
-            std::uint32_t num = 0;
-            // Ensure you don't go out of bounds
-            for (int i = 0; i < 3; i++) {
-                if (*(input - i) >= '0' && *(input - i) <= '9') {
-                    num = num * 10 + (*(input - i) - '0');
-                }
-            }
-            bit.APPEND_BITS(num, 10); // Append as 10 bits
-            group = 0; // Reset the group counter
-        }
-
-
-        // Handle any remaining digits (1 or 2 digits)
-        if (group > 0) {
-            std::uint32_t num = 0;
-            // Ensure you don't go out of bounds
-            for (int i = 0; i < group; i++) {
-                if (*(input - group + i) >= '0' && *(input - group + i) <= '9') {
-                    num = num * 10 + (*(input - group + i) - '0');
-                }
-            }
-            bit.APPEND_BITS(num, group * 3 + 1); // Adjust bit length for remaining digits
+        datas = datas * 10 + (c - '0');
+        counter++;
+        if (counter == 3)
+        {
+            bit.APPEND_BITS(static_cast<std::uint32_t>(datas),10);
+            counter = 0;
+            datas = 0;
         }
     }
+
+    if (counter > 0) 
+        bit.APPEND_BITS(static_cast<std::uint32_t>(datas));
+    
     
     // Create and return an ENCODE object with the encoding mode set to NUMERIC,
     // the size of the buffer, and the buffer's contents moved into the ENCODE object.
-    return ENCODE(NUMERIC,buffer.size(), std::move(bit));
+    return ENCODE(NUMERIC,buffer.size(), bit);
 }
-
 
 QR::ENCODE QR::ENCODE::MODE::ALPHANUMERIC_TO_BINARY(const char* input)
 {

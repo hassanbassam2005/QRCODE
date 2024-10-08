@@ -23,13 +23,23 @@ static void testing_buffer()
 
 	buffer.clear();
 
-	std::cout << "Testing... \nenter length of binary :" << std::endl;
-	std::cin >> l;
-	bit.APPEND_BITS(65, l);
+	std::cout << "Testing the 2nd eppend... \nenter length of binary :" << std::endl;
+	bit.APPEND_BITS(65, 10);
 	std::cout << "Bits in buffer: ";
 	for (bool bitval : buffer) {
 		std::cout << bitval;
 	}
+	std::cout << std::endl;
+
+	buffer.clear();
+
+	std::cout << "Testing the 3d appnd... ";
+	const char* T = { "H2" };
+	for(;*T != '\0'; T++)
+		bit.APPEND_BITS(static_cast<std::uint32_t>(*T));
+
+	for (bool bitval : buffer)
+		std::cout << bitval;
 	std::cout << std::endl;
 }
 
@@ -60,7 +70,7 @@ static void testing_Mode_()
 
 static void testing_Mode_Alphanumeric_Numeric()
 {
-	QR::ENCODE encoder = QR::ENCODE::MODE::ALPHANUMERIC_TO_BINARY("T3");
+	QR::ENCODE encoder = QR::ENCODE::MODE::ALPHANUMERIC_TO_BINARY("Y6");
 	BITBUFFER<std::vector<bool>> Enca = encoder.DATA_GETTER();
 	const std::vector<bool> binaryData = Enca.BUFFER_GETTER();
 	for (bool bit : binaryData) {
@@ -75,7 +85,7 @@ static void testing_Mode_Alphanumeric_Numeric()
 
 static void testing_Mode_Numeric()
 {
-	QR::ENCODE encoder = QR::ENCODE::MODE::NUMERIC_TO_BINARY("T5");
+	QR::ENCODE encoder = QR::ENCODE::MODE::NUMERIC_TO_BINARY("5134");
 	BITBUFFER<std::vector<bool>> Enca = encoder.DATA_GETTER();
 	const std::vector<bool>& binaryData = Enca.BUFFER_GETTER();
 	for (bool bit : binaryData) {
@@ -84,7 +94,6 @@ static void testing_Mode_Numeric()
 	std::cout << std::endl;
 	
 	std::cout << encoder.SIZE_GETTER() << std::endl;
-	std::cout << encoder.MODE_GETTER() << std::endl;
 }
 
 
@@ -93,6 +102,6 @@ int main()
 {
 	//testing_buffer();
 	//testing_Mode_();
-	//testing_Mode_Numeric();
-	testing_Mode_Alphanumeric_Numeric();
+	testing_Mode_Numeric();
+	//testing_Mode_Alphanumeric_Numeric();
 }
