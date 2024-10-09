@@ -79,6 +79,7 @@
   <ItemGroup>
     <ClInclude Include="BitBuffer\BitBuffer.h" />
     <ClInclude Include="QREncode\version.h" />
+    <ClInclude Include="ReedSolomon\ReedSolomon.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

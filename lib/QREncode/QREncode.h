@@ -4,6 +4,7 @@
 #include <iostream>
 #include <cstring>
 #include <vector>
+#include <cstdlib>
 #include"../../lib/BitBuffer/BitBuffer.h"
 
 
@@ -212,7 +213,7 @@ QR::ENCODE QR::ENCODE::MODE::NUMERIC_TO_BINARY(const char* input)
             throw std::domain_error("Invalid value");
 
         datas = datas * 10 + (c - '0');
-        counter++;
+       counter++;
         if (counter == 3)
         {
             bit.APPEND_BITS(static_cast<std::uint32_t>(datas),10);
@@ -222,7 +223,7 @@ QR::ENCODE QR::ENCODE::MODE::NUMERIC_TO_BINARY(const char* input)
     }
 
     if (counter > 0) 
-        bit.APPEND_BITS(static_cast<std::uint32_t>(datas));
+        bit.APPEND_BITS(static_cast<std::uint32_t>(datas),(counter == 1) ? 4 : 7);
     
     
     // Create and return an ENCODE object with the encoding mode set to NUMERIC,
@@ -285,25 +286,42 @@ QR::ENCODE QR::ENCODE::MODE::BYTE_TO_BINARY(const std::vector<std::uint8_t>& inp
 
 QR::ENCODE QR::ENCODE::MODE::ECI_TO_BINARY(long input)
 {
+    // Create a vector to hold the binary data
     std::vector<std::uint8_t> buffer;
 
+    // Create a BITBUFFER object to manage appending bits to the buffer
     BITBUFFER<std::vector<std::uint8_t>> bit(buffer);
 
-    if (input < 0) throw std::domain_error("ECI value is invalid");
-    else if (input < (1 << 7)) bit.APPEND_BITS(static_cast<std::int32_t>(input), 8);
+    // Validate the input ECI value
+    if (input < 0)
+        throw std::domain_error("ECI value is invalid");
+
+    // Handle cases based on the size of the input value
+    else if (input < (1 << 7))
+        // For inputs less than 128, append the input as 8 bits
+        bit.APPEND_BITS(static_cast<std::int32_t>(input), 8);
+
     else if (input < (1 << 14))
     {
-        bit.APPEND_BITS(2, 2);
+        // For inputs between 128 and 16384, append 2 bits for the mode and the input as 14 bits
+        bit.APPEND_BITS(2, 2); // Mode indicator for 14-bit input
         bit.APPEND_BITS(static_cast<std::int32_t>(input), 14);
     }
+
     else if (input < 1000000L)
     {
-        bit.APPEND_BITS(6, 3);
+        // For inputs between 16384 and 1,000,000, append 3 bits for the mode and the input as 21 bits
+        bit.APPEND_BITS(6, 3); // Mode indicator for 21-bit input
         bit.APPEND_BITS(static_cast<std::int32_t>(input), 21);
     }
-    else throw std::domain_error("ECI value is invalid");
+    else
+        // If the input exceeds the valid range, throw an error
+        throw std::domain_error("ECI value is invalid");
+
+    // Return the encoded ECI value, moving the bit buffer to the ENCODE function
     return ENCODE(MODE::ECI, 0, std::move(bit));
 }
+
 
 std::vector<QR::ENCODE> QR::ENCODE::MODE::MODE_CHOOSER(const char* input)
 {
@@ -344,18 +362,38 @@ inline size_t QR::ENCODE::SIZE_GETTER() const
 
 inline int QR::ENCODE::GET_TOTAL_BITS(const std::vector<ENCODE>& segments, int version)
 {
+    // Initialize the total bit count to zero
     int result = 0;
+
+    // Iterate over each segment in the segments vector
     for (const ENCODE& segs : segments)
     {
+        // Get the number of character counter bits for the segment's mode based on the version
         int ccbits = segs.Mode->CHAR_COUNTER_BITS(version);
-        if(segs.Bit_Counter >= (1L<<ccbits)) return -1;
-        if (4 + ccbits > INT_MAX - result) return -1;
+
+        // Check if the bit counter exceeds the maximum allowable value for this mode
+        if (segs.Bit_Counter >= (1L << ccbits))
+            return -1; // Return -1 to indicate an error
+
+        // Check if adding the mode indicator and character counter bits exceeds INT_MAX
+        if (4 + ccbits > INT_MAX - result)
+            return -1; // Return -1 to indicate an error
+
+        // Accumulate the total bit count with mode indicator and character counter bits
         result += 4 + ccbits;
-        if (segs.SIZE_GETTER() > static_cast<unsigned int>(INT_MAX - result)) return -1;
+
+        // Ensure that the size of the segment does not exceed the remaining capacity of INT_MAX
+        if (segs.SIZE_GETTER() > static_cast<unsigned int>(INT_MAX - result))
+            return -1; // Return -1 to indicate an error
+
+        // Add the size of the segment to the total bit count
         result += static_cast<int>(segs.SIZE_GETTER());
     }
+
+    // Return the total bit count for all segments
     return result;
 }
+
 
 // Getter function to return the encoding mode.
 const QR::ENCODE::MODE* QR::ENCODE::MODE_GETTER()

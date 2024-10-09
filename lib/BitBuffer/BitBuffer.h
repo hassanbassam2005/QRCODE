@@ -57,6 +57,5 @@ public:
     {
         return BIT_BUFFER;
     }
-
 };
 #endif

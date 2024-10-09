@@ -1,6 +1,8 @@
 #include "BitBuffer.h"
 #include "QREncode.h"
 #include "version.h"
+#include "ReedSolomon.h"
+
 #include <iostream>
 #include <string>
 
@@ -85,7 +87,7 @@ static void testing_Mode_Alphanumeric_Numeric()
 
 static void testing_Mode_Numeric()
 {
-	QR::ENCODE encoder = QR::ENCODE::MODE::NUMERIC_TO_BINARY("5134");
+	QR::ENCODE encoder = QR::ENCODE::MODE::NUMERIC_TO_BINARY("513445");
 	BITBUFFER<std::vector<std::uint8_t>> Enca = encoder.DATA_GETTER();
 	const std::vector<std::uint8_t>& binaryData = Enca.BUFFER_GETTER();
 	for (bool bit : binaryData) {
@@ -112,7 +114,10 @@ static void testing_Mode_Byte()
 
 static void tetsing_Version()
 {
-
+	std::uint8_t a = 3;
+	std::uint8_t b = 5;
+	int result = QR::REEDSOLOMON::GF_MULTIPLY(a, b);
+	std::cout << result;
 }
 
 int main()
@@ -121,5 +126,6 @@ int main()
 	//testing_Mode_();
 	//testing_Mode_Numeric();
 	//testing_Mode_Alphanumeric_Numeric();
-	testing_Mode_Byte();
+	//testing_Mode_Byte();
+	//tetsing_Version();
 }
