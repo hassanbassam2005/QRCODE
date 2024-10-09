@@ -19,6 +19,11 @@ public:
     // Constructor that initializes the BITBUFFER with a reference to the provided buffer.
     BITBUFFER(BUFF& BUFFER) : BIT_BUFFER(BUFFER) {}
 
+    bool BINARY_BITS(int value,int length)
+    {
+        return ((value >> length) & 1) != 0;
+    }
+
     // Appends a specified number of bits from a given integer value to the BIT_BUFFER.
     void APPEND_BITS(std::uint32_t value, int length)
     {
@@ -30,7 +35,7 @@ public:
         for (int i = length - 1; i >= 0; i--)
         {
             // Shift the value right by i and mask with 1 to extract the bit, then store it in the BIT_BUFFER.
-            BIT_BUFFER.push_back(((value >> i) & 1) != 0);
+            BIT_BUFFER.push_back(BINARY_BITS(value,i));
         }
     }
 
@@ -57,5 +62,7 @@ public:
     {
         return BIT_BUFFER;
     }
+
+
 };
 #endif

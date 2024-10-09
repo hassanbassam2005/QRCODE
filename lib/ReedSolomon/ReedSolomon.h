@@ -27,7 +27,7 @@ namespace QR
         *
         * @throws std::invalid_argument if `a` is zero, since the inverse does not exist.
         */
-        int GF_INVERSE(int a) const;
+        static int GF_INVERSE(int a);
 
         /**
         * @brief Performs multiplication of two elements in Galois Field GF(2^8).
@@ -69,13 +69,30 @@ namespace QR
         * @throws std::out_of_range if either `a` or `b` is out of the valid range
         *         for GF(2^8).
         */
-        int GF_DEVIDE(int a, int b) const;
+        static std::uint8_t GF_DEVIDE(int a, int b);
 
-        std::vector<uint8_t> COMPUTE_DIVISOR(int a) const;
+        /**
+        * Computes the divisor polynomial for Reed-Solomon error correction code generation.
+        * This method computes the coefficients of the generator polynomial, which is
+        * used to encode the message with error correction.
+        *
+        * The generator polynomial is defined as the product of `(x - r^i)` for `i`
+        * in the range [0, degree-1], where `r` is a generator element of GF(2^8).
+        * Each coefficient in the polynomial is calculated in GF(2^8) arithmetic.
+        *
+        * @param a The degree of the divisor polynomial to compute. This value must
+        * be in the range [1, 255].
+        * @return A vector of uint8_t representing the coefficients of the divisor
+        *         polynomial in GF(2^8), with the highest degree coefficient first.
+        *
+        * @throws std::domain_error if `a` is out of the valid range [1, 255].
+        */
+        static std::vector<uint8_t> COMPUTE_DIVISOR(int a);
+
 	};
 }
 
-int QR::REEDSOLOMON::GF_INVERSE(int a) const
+int QR::REEDSOLOMON::GF_INVERSE(int a)
 {
     if (a == 0) throw std::invalid_argument("Inverse of zero does not exist");
 
@@ -105,40 +122,43 @@ std::uint8_t QR::REEDSOLOMON::GF_MULTIPLY(std::uint8_t a, std::uint8_t b)
         if (a & 0x100) a ^= 0x11D;
     }
     assert(z >> 8 == 0);
-    return result;
+    return static_cast<uint8_t>(result);
 }
 
-int QR::REEDSOLOMON::GF_DEVIDE(int a, int b) const
+// Divides two elements in GF(2^8).
+// Computes a / b using multiplication by the inverse of b.
+std::uint8_t QR::REEDSOLOMON::GF_DEVIDE(int a, int b)
 {
-    if (b == 0) throw std::domain_error("Devided by zero");
+    if (b == 0) throw std::domain_error("Divided by zero");
 
     int inverse_b = GF_INVERSE(b);
-
-    int result = a * inverse_b;
+    int result = GF_MULTIPLY(inverse_b, a);
 
     if (result & 0x100) result ^= 0x11D;
 
     return result;
 }
 
-std::vector<std::uint8_t> QR::REEDSOLOMON::COMPUTE_DIVISOR(int a) const
+
+// Computes the divisor polynomial for Reed-Solomon error correction.
+std::vector<std::uint8_t> QR::REEDSOLOMON::COMPUTE_DIVISOR(int a)
 {
-    if (a < 11 || a>255) throw std::domain_error("out of range");
+    if (a < 1 || a > 255) throw std::domain_error("out of range");
 
     std::vector<std::uint8_t> result(static_cast<size_t>(a));
-    result.at(result.size() - 1) = 1;
-    std::uint8_t root = 1;
+    result.back() = 1; // Initialize the highest degree term to 1
+    std::uint8_t root = 1; // Start with the generator element
     for (int i = 0; i < a; i++)
     {
         for (size_t j = 0; j < result.size(); j++)
         {
-            result.at(j) = GF_MULTIPLY(result.at(j), root);
-            if (j + 1 < result.size()) result.at(j) ^= result.at(j + 1);
+            result.at(j) = GF_MULTIPLY(result.at(j), root); // Multiply current coefficients by root
+            if (j + 1 < result.size()) result.at(j) ^= result.at(j + 1); // XOR with next coefficient
         }
-        root = GF_MULTIPLY(root, 0x02);
-
+        root = GF_MULTIPLY(root, 0x02); // Update root for next iteration
     }
-    return result;
+    return result; // Return the computed divisor polynomial
 }
+
 
 #endif

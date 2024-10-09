@@ -114,10 +114,26 @@ static void testing_Mode_Byte()
 
 static void tetsing_Version()
 {
+	std::cout << "tetsing the multiply : ";
 	std::uint8_t a = 3;
 	std::uint8_t b = 5;
 	int result = QR::REEDSOLOMON::GF_MULTIPLY(a, b);
-	std::cout << result;
+	std::cout << result << std::endl;
+
+	std::cout << "testing the divisor";
+	int t = 5;
+	std::vector<std::uint8_t>g = QR::REEDSOLOMON::COMPUTE_DIVISOR(t);
+	for (const auto& co : g )
+	{
+		std::cout <<" " << static_cast<int>(co) << " ";
+	}
+	std::cout << std::endl;
+
+	std::cout << "testing the division";
+	int d = 10;
+	int f = 2;
+	int res = QR::REEDSOLOMON::GF_DEVIDE(d, f);
+	std::cout << res;
 }
 
 int main()
