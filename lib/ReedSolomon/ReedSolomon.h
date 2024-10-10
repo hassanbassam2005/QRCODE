@@ -89,6 +89,10 @@ namespace QR
         */
         static std::vector<uint8_t> COMPUTE_DIVISOR(int a);
 
+        static std::vector<std::uint8_t> COMPUTE_REMAINDER(
+            const std::vector<std::uint8_t>& data,
+            const std::vector<std::uint8_t>& divisor);
+
 	};
 }
 
@@ -131,10 +135,11 @@ std::uint8_t QR::REEDSOLOMON::GF_DEVIDE(int a, int b)
 {
     if (b == 0) throw std::domain_error("Divided by zero");
 
+    // Find the multiplicative inverse of b in GF(2^8)
     int inverse_b = GF_INVERSE(b);
-    int result = GF_MULTIPLY(inverse_b, a);
 
-    if (result & 0x100) result ^= 0x11D;
+    // Multiply a by the inverse of b in GF(2^8)
+    int result = GF_MULTIPLY(inverse_b, a);
 
     return result;
 }
@@ -159,6 +164,47 @@ std::vector<std::uint8_t> QR::REEDSOLOMON::COMPUTE_DIVISOR(int a)
     }
     return result; // Return the computed divisor polynomial
 }
+
+
+// This function computes the remainder when dividing the input `data` by the 
+// `divisor` using polynomial division in the Galois Field GF(2^8), which is
+// commonly used in error correction codes like Reed-Solomon.
+inline std::vector<std::uint8_t> QR::REEDSOLOMON::COMPUTE_REMAINDER(
+    const std::vector<std::uint8_t>& data, 
+    const std::vector<std::uint8_t>& divisor)
+{
+    // Initialize the result vector to the same size as the divisor. This will
+    // store the remainder during the division process.
+    std::vector<std::uint8_t> result(divisor.size());
+
+    // Iterate over each byte of the input data.
+    for (std::uint8_t b : data)
+    {
+        // Calculate the "factor" for the current division step.
+        // The first element of the result is used as the leading coefficient
+        // for the current step of polynomial division.
+        std::uint8_t factor = b ^ result.at(0);
+
+        // Shift the result to the left (simulating polynomial division).
+        // The first element is removed, and a 0 is appended to the end.
+        result.erase(result.begin());  // Remove the first element
+        result.push_back(0);           // Append 0 to maintain the size of result
+
+        // Now we apply the division step by multiplying each element of the divisor
+        // by the factor, and then XORing it with the corresponding element in the result.
+        for (size_t i = 0; i < result.size(); i++)
+        {
+            // Multiply the current divisor element by the factor using GF(2^8) multiplication
+            // and XOR it with the current result element.
+            result.at(i) ^= GF_MULTIPLY(divisor.at(i), factor);
+        }
+    }
+
+    // After processing all the data bytes, the remainder is stored in the `result` vector,
+    // which now contains the error correction codewords.
+    return result;
+}
+
 
 
 #endif
