@@ -1,6 +1,5 @@
-#include "BitBuffer.h"
-#include "QREncode.h"
-#include "ReedSolomon.h"
+#include "QRCode.h"
+
 
 #include <iostream>
 #include <string>
@@ -71,7 +70,7 @@ static void testing_Mode_()
 
 static void testing_Mode_Alphanumeric_Numeric()
 {
-	QR::ENCODE encoder = QR::ENCODE::MODE::ALPHANUMERIC_TO_BINARY("Y6");
+	QR::ENCODE encoder = QR::ENCODE::MODE::ALPHANUMERIC_TO_BINARY("HASSAN");
 	BITBUFFER<std::vector<std::uint8_t>> Enca = encoder.DATA_GETTER();
 	const std::vector<std::uint8_t>& binaryData = Enca.BUFFER_GETTER();
 	for (bool bit : binaryData) {
@@ -134,7 +133,7 @@ int main()
 	//testing_buffer();
 	//testing_Mode_();
 	//testing_Mode_Numeric();
-	//testing_Mode_Alphanumeric_Numeric();
+	testing_Mode_Alphanumeric_Numeric();
 	//testing_Mode_Byte();
-	tetsing_Version();
+	//tetsing_Version();
 }

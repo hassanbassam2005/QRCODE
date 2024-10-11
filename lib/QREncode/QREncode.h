@@ -5,9 +5,8 @@
 #include <cstring>
 #include <vector>
 #include <cstdlib>
-#include"../../lib/BitBuffer/BitBuffer.h"
 #include <cassert>
-
+#include"../../lib/BitBuffer/BitBuffer.h"
 
 // QR namespace that encapsulates the QR code-related functionality
 namespace QR
@@ -122,7 +121,20 @@ namespace QR
             // Function to get the capacity in codewords for a given QR code version and error correction level
             int GET_CAPACITY_CODEWORDS(int version, ERROR ecl) const;
 
-        }; //End of version class
+
+
+        }; //End of VERSION class
+
+        class MASK
+        {
+        private:
+            int size;
+            int maskPattern;
+            std::vector<std::vector<bool>> MaskMatrix;
+            std::vector <std::vector<bool>> isMasked;
+        public:
+            void MASK_APPLY(int mask);
+        };
 
     private:
         // Pointer to a constant MODE object, which represents the encoding mode being used.
@@ -161,10 +173,25 @@ namespace QR
                 throw std::domain_error("Invalid value");
         }
 
+        // Function to retrieve a pointer to the current encoding mode.
+        // Returns a pointer to a constant MODE object, which represents the encoding mode being used.
         const MODE* MODE_GETTER();
+
+        // Function to retrieve the data as a BITBUFFER, which stores binary data in a vector of uint8_t.
+        // Returns a BITBUFFER containing the encoded data.
         BITBUFFER<std::vector<std::uint8_t>> DATA_GETTER() const;
+
+        // Function to retrieve the size of the encoded data.
+        // Returns the size of the encoded data as a size_t value.
         size_t SIZE_GETTER() const;
+
+        // Function to calculate the total number of bits required for encoding the given segments.
+        // Parameters:
+        // - segments: A vector of ENCODE objects representing the segments to be encoded.
+        // - version: An integer representing the QR code version (determines the encoding parameters).
+        // Returns the total number of bits required as an integer.
         int GET_TOTAL_BITS(const std::vector<ENCODE>& segments, int version);
+
     };
 } // End of QR namespace
 
@@ -309,7 +336,7 @@ QR::ENCODE QR::ENCODE::MODE::ALPHANUMERIC_TO_BINARY(const char* input)
         bb.APPEND_BITS(static_cast<std::uint32_t>(accumData), 6);
     // Create and return an ENCODE object with the encoding mode set to NUMERIC,
     // the size of the buffer, and the buffer's contents moved into the ENCODE object.
-    return ENCODE(MODE::NUMERIC, counter, std::move(bb));
+    return ENCODE(MODE::NUMERIC, charCount, std::move(bb));
 }
 
 
@@ -503,7 +530,6 @@ int QR::ENCODE::VERSION::GET_CAPACITY_BITS(int version) const
     return result;
 }
 
-
 int QR::ENCODE::VERSION::GET_CAPACITY_CODEWORDS(int version, QR::ENCODE::VERSION::ERROR ecl) const
 {
     // Calculate the capacity in bits for the specified version
@@ -516,6 +542,53 @@ int QR::ENCODE::VERSION::GET_CAPACITY_CODEWORDS(int version, QR::ENCODE::VERSION
         * NUM_ERROR_CORRECTION_BLOCKS[static_cast<int>(ecl)][version];
 }
 
+
+void QR::ENCODE::MASK::MASK_APPLY(int mask)
+{
+    if (mask < 0 || mask > 7) throw std::domain_error("Invalid mask number");
+
+    size_t s = static_cast<size_t>(size);
+
+    maskPattern = mask;
+
+    for(size_t y = 0; y < s;y++)
+    {
+        for (size_t x = 0; x < s; x++)
+        {
+            bool invert = false;
+            switch (maskPattern)
+            {
+            case 0: 
+                invert = (x + y) % 2 == 0;
+                break;
+            case 1:
+                invert = y % 2 == 0;
+                break;
+            case 2:
+                invert = x % 3 == 0;
+                break;
+            case 3:
+                invert = (x + y) % 3 == 0;
+                break;
+            case 4:
+                invert = ((x / 2) + (y / 3)) % 2 == 0;
+                break;
+            case 5:
+                invert = (x * y) % 2 + (x * y) % 3 == 0;
+                break;
+            case 6:
+                invert = (((x + y) % 2) + ((x + y) % 3)) == 0;
+                break;
+            case 7:
+                invert = ((x * y) % 3) % 2 == 0;
+                break;
+            default:
+                throw std::invalid_argument("Invalid mask pattern");
+            }
+            if (invert) MaskMatrix[y][x] = MaskMatrix[y][x] ^ (invert & !isMasked[y][x]);
+        }
+    }
+}
 
 
 const int8_t QR::ENCODE::VERSION::ECC_CODEWORDS_PER_BLOCK[4][41] = {
@@ -533,5 +606,6 @@ const int8_t QR::ENCODE::VERSION::NUM_ERROR_CORRECTION_BLOCKS[4][41] = {
     {-1, 1, 1, 2, 2, 4, 4, 6, 6, 8, 8,  8, 10, 12, 16, 12, 17, 16, 18, 21, 20, 23, 23, 25, 27, 29, 34, 34, 35, 38, 40, 43, 45, 48, 51, 53, 56, 59, 62, 65, 68},  // Quartile
     {-1, 1, 1, 2, 4, 4, 4, 5, 6, 8, 8, 11, 11, 16, 16, 18, 16, 19, 21, 25, 25, 25, 34, 30, 32, 35, 37, 40, 42, 45, 48, 51, 54, 57, 60, 63, 66, 70, 74, 77, 81},  // High
 };
+
 
 #endif
