@@ -23,9 +23,6 @@
     <ClInclude Include="BitBuffer\BitBuffer.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="QREncode\version.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="ReedSolomon\ReedSolomon.h">
       <Filter>Header Files</Filter>
     </ClInclude>
