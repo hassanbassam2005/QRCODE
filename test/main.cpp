@@ -133,7 +133,7 @@ int main()
 	//testing_buffer();
 	//testing_Mode_();
 	//testing_Mode_Numeric();
-	testing_Mode_Alphanumeric_Numeric();
+	//testing_Mode_Alphanumeric_Numeric();
 	//testing_Mode_Byte();
 	//tetsing_Version();
 }
