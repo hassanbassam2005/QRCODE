@@ -3,20 +3,19 @@
 
 #include "../BitBuffer/BitBuffer.h"
 #include "../QREncode/QREncode.h"
+#include "../QRCode/QRCode.h"
 
+#include <string>
 
 namespace QR
 {
 	struct DESIGN
 	{
-		static void DRAW_VERSION();
+        
+
+            
 	};
 }
 
-
-inline void QR::DESIGN::DRAW_VERSION()
-{
-
-}
 
 #endif

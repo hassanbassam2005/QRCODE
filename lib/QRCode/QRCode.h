@@ -71,18 +71,39 @@ namespace QR
                std::vector<std::uint8_t>& DataCodeWords,
                int MASK) : version(VERSION) , ErrorCorrection(ECL)
         {
-            size = 34; 
+            size = version * 4 + 17; 
             size_t sz = static_cast<size_t>(size);
             maskPattern = 45;
             int msk = maskPattern;
             MaskMatrix = std::vector<std::vector<bool> >(sz, std::vector<bool>(sz));  // Initially all light
             MaskMatrix = std::vector<std::vector<bool> >(sz, std::vector<bool>(sz));
         }
-		void POSITION_MARKER(int x, int y);
-		void ALIGMNET_MARKER(int x, int y);
+        // Places a position marker (finder pattern) at the specified coordinates (x, y).
+        // This is typically used to define the corners of the QR code.
+        void POSITION_MARKER(int x, int y);
+
+        // Places an alignment marker at the specified coordinates (x, y).
+        // Alignment markers help to correct distortion in the QR code when scanned.
+        void ALIGNMENT_MARKER(int x, int y);
+
+        // Applies a given mask pattern to the QR code based on the mask parameter.
+        // Masks are used to ensure the QR code pattern is more evenly distributed.
         void MASK_APPLY(int mask);
+
+        // Sets the color of a module (cell) at coordinates (x, y).
+        // If isColored is true (or non-zero), the module is set as black (colored).
+        // If isColored is false (or zero), the module is set as white (uncolored).
         void SET_MODULE(int x, int y, int isColored);
+
+        // Returns the color status of the module at coordinates (x, y).
+        // Returns true if the module is colored (black), false if it is uncolored (white).
         bool MODULE(int x, int y);
+
+        int SIZE_GETTER() const;
+
+        int VERSION_GETTER() const;
+
+        QR::QRCODE::VERSION::ERROR ERROR_CORRECTION() const;
 	};
 }
 
@@ -221,6 +242,21 @@ inline bool QR::QRCODE::MODULE(int x, int y)
     return MaskMatrix[static_cast<std::uint8_t>(x)][static_cast<std::uint8_t>(y)];
 }
 
+inline int QR::QRCODE::SIZE_GETTER() const
+{
+    return size;
+}
+
+inline int QR::QRCODE::VERSION_GETTER() const
+{
+    return version;
+}
+
+inline QR::QRCODE::VERSION::ERROR QR::QRCODE::ERROR_CORRECTION() const
+{
+    return ErrorCorrection;
+}
+
 inline void QR::QRCODE::POSITION_MARKER(int x, int y)
 {
 	for (int dy = -4; dy <= 4; dy++)
@@ -235,13 +271,13 @@ inline void QR::QRCODE::POSITION_MARKER(int x, int y)
 	}
 }
 
-inline void QR::QRCODE::ALIGMNET_MARKER(int x, int y)
+inline void QR::QRCODE::ALIGNMENT_MARKER(int x, int y)
 {
-	for (int dy = -2; dy <= 2; dy++)
-	{
-		for (int dx = -2; dx <= 2; dx++)
-			QR::QRCODE::SET_MODULE(x + dx, y + dy, std::max(std::abs(dx), std::abs(dy)));
-	}
+    for (int dy = -2; dy <= 2; dy++)
+    {
+        for (int dx = -2; dx <= 2; dx++)
+            QR::QRCODE::SET_MODULE(x + dx, y + dy, std::max(std::abs(dx), std::abs(dy)));
+    }
 }
 
 const int8_t QR::QRCODE::VERSION::ECC_CODEWORDS_PER_BLOCK[4][41] = {
