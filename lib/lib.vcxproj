@@ -79,7 +79,6 @@
   <ItemGroup>
     <ClInclude Include="BitBuffer\BitBuffer.h" />
     <ClInclude Include="QRCode\QRCode.h" />
-    <ClInclude Include="QRDesign\QRDesign.h" />
     <ClInclude Include="ReedSolomon\ReedSolomon.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

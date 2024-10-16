@@ -19,7 +19,7 @@ public:
     // Constructor that initializes the BITBUFFER with a reference to the provided buffer.
     BITBUFFER(BUFF& BUFFER) : BIT_BUFFER(BUFFER) {}
 
-    bool BINARY_BITS(int value,int length)
+    static bool BINARY_BITS(long value,int length)
     {
         return ((value >> length) & 1) != 0;
     }

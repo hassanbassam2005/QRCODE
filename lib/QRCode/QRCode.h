@@ -4,7 +4,8 @@
 #include"../BitBuffer/BitBuffer.h"
 #include "../QREncode/QREncode.h"
 #include"../ReedSolomon/ReedSolomon.h"
-#include "../QRDesign/QRDesign.h"
+#include "../BitBuffer/BitBuffer.h"
+
 
 #include<algorithm>
 
@@ -93,7 +94,7 @@ namespace QR
         // Sets the color of a module (cell) at coordinates (x, y).
         // If isColored is true (or non-zero), the module is set as black (colored).
         // If isColored is false (or zero), the module is set as white (uncolored).
-        void SET_MODULE(int x, int y, int isColored);
+        void SET_MODULE(int x, int y, bool isColored);
 
         // Returns the color status of the module at coordinates (x, y).
         // Returns true if the module is colored (black), false if it is uncolored (white).
@@ -104,6 +105,8 @@ namespace QR
         int VERSION_GETTER() const;
 
         QR::QRCODE::VERSION::ERROR ERROR_CORRECTION() const;
+
+        void DRAW_VERSION();
 	};
 }
 
@@ -228,49 +231,89 @@ void QR::QRCODE::MASK_APPLY(int mask)
     }
 }
 
-inline void QR::QRCODE::SET_MODULE(int x, int y, int isColored)
+// Sets a module in the QR code matrix at (x, y) with a specified color (0 or 1).
+// 'isColored' determines if the module is filled (1) or empty (0).
+// 'dx' and 'dy' are used as size_t to access MaskMatrix and isMasked arrays.
+inline void QR::QRCODE::SET_MODULE(int x, int y, bool isColored)
 {
     size_t dx = static_cast<size_t>(x);
     size_t dy = static_cast<size_t>(y);
 
-    MaskMatrix[dy][dx] = isColored;
-    isMasked[dy][dx] = true;
+    MaskMatrix[dy][dx] = isColored;  // Set the color of the module in the MaskMatrix.
+    isMasked[dy][dx] = true;         // Mark the module as masked.
 }
 
+// Retrieves the module state (true/false) at position (x, y) from MaskMatrix.
+// Uses uint8_t casting for input parameters for consistency with array access.
 inline bool QR::QRCODE::MODULE(int x, int y)
 {
     return MaskMatrix[static_cast<std::uint8_t>(x)][static_cast<std::uint8_t>(y)];
 }
 
+// Returns the size of the QR code (width/height).
 inline int QR::QRCODE::SIZE_GETTER() const
 {
     return size;
 }
 
+// Returns the version of the QR code.
 inline int QR::QRCODE::VERSION_GETTER() const
 {
     return version;
 }
 
+// Returns the error correction level used in the QR code.
 inline QR::QRCODE::VERSION::ERROR QR::QRCODE::ERROR_CORRECTION() const
 {
     return ErrorCorrection;
 }
 
-inline void QR::QRCODE::POSITION_MARKER(int x, int y)
+inline void QR::QRCODE::DRAW_VERSION()
 {
-	for (int dy = -4; dy <= 4; dy++)
-	{
-		for (int dx = -4; dx <= 4; dx++)
-		{
-			int distance = std::max(std::abs(dx), std::abs(dy));
-			int x_finder = x + dx, y_finder = y + dy;
-			if (0 <= x_finder && 0 <= y_finder && x_finder < size && y_finder < size)
-				QR::QRCODE::SET_MODULE(x_finder, y_finder, distance != 2 && distance != 4);
-		}
-	}
+    if (version < 7)
+        return;
+
+    int remainder = version;
+
+    for (int i = 0; i < 12; i++)
+    {
+        remainder <<= 1;
+        if ((remainder << 12) & 1)
+            remainder ^= 0x1F25;
+    }
+        
+    long bits = static_cast<long>(version) << 12 | remainder;
+    assert(bits >> 18 == 0);
+
+    for (int i = 0; i < 18; i++)
+    {
+        bool bit = BITBUFFER<long>::BINARY_BITS(bits,i);
+        int row = size - 11 + i % 3;
+        int column = i / 3;
+        QR::QRCODE::SET_MODULE(row, column, bit);
+        QR::QRCODE::SET_MODULE(row, column, bit);
+    }
 }
 
+// Places a position marker at the given (x, y) coordinate.
+// This is typically used for the position detection patterns in QR codes.
+inline void QR::QRCODE::POSITION_MARKER(int x, int y)
+{
+    for (int dy = -4; dy <= 4; dy++)
+    {
+        for (int dx = -4; dx <= 4; dx++)
+        {
+            int distance = std::max(std::abs(dx), std::abs(dy));
+            int x_finder = x + dx, y_finder = y + dy;
+            // Only set the module if it is within bounds of the QR code size.
+            if (0 <= x_finder && 0 <= y_finder && x_finder < size && y_finder < size)
+                QR::QRCODE::SET_MODULE(x_finder, y_finder, distance != 2 && distance != 4);
+        }
+    }
+}
+
+// Places an alignment marker at the given (x, y) coordinate.
+// Alignment patterns help the QR code reader adjust for distortion.
 inline void QR::QRCODE::ALIGNMENT_MARKER(int x, int y)
 {
     for (int dy = -2; dy <= 2; dy++)
@@ -279,6 +322,7 @@ inline void QR::QRCODE::ALIGNMENT_MARKER(int x, int y)
             QR::QRCODE::SET_MODULE(x + dx, y + dy, std::max(std::abs(dx), std::abs(dy)));
     }
 }
+
 
 const int8_t QR::QRCODE::VERSION::ECC_CODEWORDS_PER_BLOCK[4][41] = {
     //0,  1,  2,  3,  4,  5,  6,  7,  8,  9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40    Error correction level

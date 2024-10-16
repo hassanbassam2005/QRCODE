@@ -29,8 +29,5 @@
     <ClInclude Include="QRCode\QRCode.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="QRDesign\QRDesign.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
   </ItemGroup>
 </Project>
