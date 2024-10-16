@@ -48,7 +48,7 @@ namespace QR
             };
 
             // Function to retrieve the number of bits used for error correction based on the specified error correction level
-            int GETBITSERROR(ERROR err);
+            static int GETBITSERROR(ERROR err);
 
             // Function to get the capacity in bits for a given QR code version
             int GET_CAPACITY_BITS(int version) const;
@@ -107,6 +107,8 @@ namespace QR
         QR::QRCODE::VERSION::ERROR ERROR_CORRECTION() const;
 
         void DRAW_VERSION();
+
+        void DRAW_FORMAT_BITS();
 	};
 }
 
@@ -293,6 +295,31 @@ inline void QR::QRCODE::DRAW_VERSION()
         QR::QRCODE::SET_MODULE(row, column, bit);
         QR::QRCODE::SET_MODULE(row, column, bit);
     }
+}
+
+inline void QR::QRCODE::DRAW_FORMAT_BITS()
+{
+    int data = QR::QRCODE::VERSION::GETBITSERROR(ErrorCorrection);
+    int remainder = data;
+    for (int i = 0; i < 10; i++)
+        remainder = (remainder << 1) | ((remainder >> 9) * 0X537);
+    int bits = (data << 10 | remainder) ^ 0X537;
+    assert(bits >> 15 == 0);
+
+    for (int i = 0; i <= 5; i++)
+        SET_MODULE(8, i, BITBUFFER<bool>::BINARY_BITS(bits, i));
+
+    SET_MODULE(8, 7, BITBUFFER<bool>::BINARY_BITS(bits, 6));
+    SET_MODULE(7, 8, BITBUFFER<bool>::BINARY_BITS(bits, 7));
+    SET_MODULE(7, 8, BITBUFFER<bool>::BINARY_BITS(bits, 8));
+    
+    for (int i = 9; i < 15; i++)
+        SET_MODULE(14, -i, BITBUFFER<bool>::BINARY_BITS(bits, i));
+    for (int i = 0; i < 8; i++)
+        SET_MODULE(size - 1 - i, 8, BITBUFFER<bool>::BINARY_BITS(bits, i));
+    for (int i = 8; i < 15; i++)
+        SET_MODULE(8, size-1-i, BITBUFFER<bool>::BINARY_BITS(bits, i));
+    SET_MODULE(8, size - 8, true);
 }
 
 // Places a position marker at the given (x, y) coordinate.
