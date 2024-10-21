@@ -128,6 +128,16 @@ static void tetsing_Version()
 	std::cout << std::endl;
 }
 
+static void testing_capacity()
+{
+	QRCODE::VERSION qr1;
+	int res1 = qr1.GET_CAPACITY_BITS(40);
+	std::cout <<"result1 :" << res1 << std::endl;
+	int res2 = qr1.GET_CAPACITY_CODEWORDS(40,QRCODE::VERSION::ERROR::HIGH);
+	std::cout <<"result2 :" << res2 << std::endl;
+
+}
+
 int main()
 {
 	//testing_buffer();
@@ -136,4 +146,5 @@ int main()
 	//testing_Mode_Alphanumeric_Numeric();
 	//testing_Mode_Byte();
 	//tetsing_Version();
+	testing_capacity();
 }

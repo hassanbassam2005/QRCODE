@@ -6,9 +6,6 @@
 #include"../ReedSolomon/ReedSolomon.h"
 #include "../BitBuffer/BitBuffer.h"
 
-
-#include<algorithm>
-
 namespace QR
 {
 	class QRCODE
@@ -16,45 +13,121 @@ namespace QR
 	public:
         class VERSION
         {
-        private:
-            // Static constant 2D array to store the number of error correction codewords per block 
-            // for different QR code versions (0 to 40) across various error correction levels.
-            // Indices correspond to: 
-            // [error correction level][version number].
-            // Levels: 0 - Low, 1 - Medium, 2 - Quartile, 3 - High
+        public:
+            /**
+            * @brief Minimum version number for QR codes.
+            *
+            * This constant defines the smallest version number available for QR codes.
+            * Version numbers determine the size and data capacity of a QR code.
+            */
+            static constexpr int MIN_VERSION = 1;
+
+            /**
+             * @brief Maximum version number for QR codes.
+             *
+             * This constant defines the largest version number available for QR codes.
+             * Version numbers range from 1 to 40, with higher versions allowing more data to be stored.
+             */
+            static constexpr int MAX_VERSION = 40;
+
+            /**
+             * @brief Stores the number of error correction codewords per block for each QR code version.
+             *
+             * This static constant 2D array contains the number of error correction codewords per block
+             * for different versions of QR codes (ranging from 1 to 40) across various error correction levels.
+             * Indices are structured as:
+             * - Rows [0-3] correspond to error correction levels:
+             *   - 0: Low (L)
+             *   - 1: Medium (M)
+             *   - 2: Quartile (Q)
+             *   - 3: High (H)
+             * - Columns [1-40] correspond to QR code versions.
+             *
+             * This array is used to determine the error correction capabilities of QR codes.
+             */
             static const std::int8_t ECC_CODEWORDS_PER_BLOCK[4][41];
 
-            // Static constant 2D array to store the number of error correction blocks 
-            // for different QR code versions (0 to 40) across various error correction levels.
-            // Indices correspond to: 
-            // [error correction level][version number].
-            // Levels: 0 - Low, 1 - Medium, 2 - Quartile, 3 - High
+            /**
+             * @brief Stores the number of error correction blocks for each QR code version.
+             *
+             * This static constant 2D array contains the number of error correction blocks
+             * for different versions of QR codes (ranging from 1 to 40) across various error correction levels.
+             * Indices are structured as:
+             * - Rows [0-3] correspond to error correction levels:
+             *   - 0: Low (L)
+             *   - 1: Medium (M)
+             *   - 2: Quartile (Q)
+             *   - 3: High (H)
+             * - Columns [1-40] correspond to QR code versions.
+             *
+             * Each entry specifies how many blocks are used for error correction in a given version
+             * and error correction level, influencing the resilience of the QR code.
+             */
             static const std::int8_t NUM_ERROR_CORRECTION_BLOCKS[4][41];
 
-        public:
-            // Minimum version number for QR codes
-            const int MIN_VERSION = 1;
 
-            // Maximum version number for QR codes
-            const int MAX_VERSION = 40;
 
-            // Enum class representing the different levels of error correction for QR codes
+            /**
+            * @brief Enum class representing the different levels of error correction for QR codes.
+            *
+            * QR codes support four levels of error correction, allowing a trade-off between data capacity and error tolerance.
+            * Each level provides a different amount of redundancy, which determines how much of the QR code can be damaged
+            * while still allowing successful decoding. The levels are ordered from the lowest to the highest error correction capability.
+            */
             enum class ERROR
             {
-                LOW = 0,       // Low error correction level
-                MEDIUM,       // Medium error correction level
-                QUARTILE,     // Quartile error correction level
-                HIGH          // High error correction level
+                LOW = 0,       // Low error correction level, allows for the maximum data storage but provides the least error tolerance.
+                MEDIUM,        // Medium error correction level, balances data capacity and error correction capability.
+                QUARTILE,      // Quartile error correction level, offers better error tolerance at the cost of reduced data capacity.
+                HIGH           // High error correction level, provides the highest error tolerance but allows for the least data storage.
             };
 
-            // Function to retrieve the number of bits used for error correction based on the specified error correction level
+
+            /**
+            * @brief Retrieves the number of bits used for error correction based on the specified error correction level.
+            *
+            * This function returns the number of bits allocated for error correction in a QR code,
+            * depending on the error correction level specified. Each error correction level
+            * corresponds to a different amount of redundancy to protect against data loss.
+            *
+            * @param err The error correction level, specified as an `ERROR` enum value.
+            *            Possible values are `ERROR::LOW`, `ERROR::MEDIUM`, `ERROR::QUARTILE`, `ERROR::HIGH`.
+            * @return The number of bits used for error correction for the given level.
+            */
             static int GETBITSERROR(ERROR err);
 
-            // Function to get the capacity in bits for a given QR code version
-            int GET_CAPACITY_BITS(int version) const;
+            /**
+             * @brief Retrieves the capacity in bits for a given QR code version.
+             *
+             * This function calculates the total number of bits that can be encoded in a QR code
+             * for a specific version. The version number directly affects the size of the QR code
+             * and its capacity for data storage. Higher versions have larger dimensions and can
+             * store more bits.
+             *
+             * @param version The version of the QR code, ranging from 1 to 40.
+             * @return The total number of bits that can be encoded in the QR code for the specified version.
+             *
+             * @throws std::invalid_argument if the version is not within the range [1, 40].
+             */
+            static int GET_CAPACITY_BITS(int version);
 
-            // Function to get the capacity in codewords for a given QR code version and error correction level
-            int GET_CAPACITY_CODEWORDS(int version, ERROR ecl) const;
+            /**
+             * @brief Retrieves the capacity in codewords for a given QR code version and error correction level.
+             *
+             * This function calculates the number of codewords (8-bit units of data) that can be stored
+             * in a QR code, based on its version and the specified error correction level. The capacity
+             * is reduced as the error correction level increases, due to the additional redundancy required.
+             *
+             * @param version The version of the QR code, ranging from 1 to 40.
+             * @param ecl The error correction level, specified as an `ERROR` enum value.
+             *            Possible values are `ERROR::LOW`, `ERROR::MEDIUM`, `ERROR::QUARTILE`, `ERROR::HIGH`.
+             * @return The total number of codewords that can be stored in the QR code for the specified version
+             *         and error correction level.
+             *
+             * @throws std::invalid_argument if the version is not within the range [1, 40].
+             */
+            static int GET_CAPACITY_CODEWORDS(int version, ERROR ecl);
+
 
 
 
@@ -66,49 +139,183 @@ namespace QR
         std::vector <std::vector<bool>> isMasked;
         int version;
         QRCODE::VERSION::ERROR ErrorCorrection;
-	public:
+    public:
+        /**
+         * @brief Constructs a QRCODE object with specified version, error correction level, data codewords, and mask pattern.
+         *
+         * @param VERSION The version of the QR code (ranges from 1 to 40).
+         * @param ECL The error correction level for the QR code.
+         * @param DataCodeWords A vector containing the encoded data as codewords.
+         * @param MASK The mask pattern to be applied to the QR code.
+         */
         QRCODE(int VERSION,
-               QR::QRCODE::VERSION::ERROR ECL,
-               std::vector<std::uint8_t>& DataCodeWords,
-               int MASK) : version(VERSION) , ErrorCorrection(ECL)
+            QR::QRCODE::VERSION::ERROR ECL,
+            std::vector<std::uint8_t>& DataCodeWords,
+            int MASK)
+            : version(VERSION), ErrorCorrection(ECL)
         {
-            size = version * 4 + 17; 
+            // Calculate the size of the QR code matrix based on the version.
+            size = version * 4 + 17;
             size_t sz = static_cast<size_t>(size);
-            maskPattern = 45;
-            int msk = maskPattern;
-            MaskMatrix = std::vector<std::vector<bool> >(sz, std::vector<bool>(sz));  // Initially all light
-            MaskMatrix = std::vector<std::vector<bool> >(sz, std::vector<bool>(sz));
+
+            // Set the initial mask pattern.
+            maskPattern = MASK;
+
+            // Initialize the QR code's mask matrix with 'false' (light/unfilled modules).
+            MaskMatrix = std::vector<std::vector<bool>>(sz, std::vector<bool>(sz));
+
+            // Initialize a matrix to track which modules have been masked.
+            isMasked = std::vector<std::vector<bool>>(sz, std::vector<bool>(sz));
         }
-        // Places a position marker (finder pattern) at the specified coordinates (x, y).
-        // This is typically used to define the corners of the QR code.
+
+        /**
+         * @brief Places a position marker (finder pattern) at the specified coordinates (x, y).
+         *
+         * Position markers are used to define the corners of the QR code, aiding in alignment
+         * when scanned. They are typically found at the top-left, top-right, and bottom-left corners.
+         *
+         * @param x The x-coordinate of the position marker's starting point.
+         * @param y The y-coordinate of the position marker's starting point.
+         */
         void POSITION_MARKER(int x, int y);
 
-        // Places an alignment marker at the specified coordinates (x, y).
-        // Alignment markers help to correct distortion in the QR code when scanned.
+        /**
+         * @brief Places an alignment marker at the specified coordinates (x, y).
+         *
+         * Alignment markers help correct distortions in the QR code when it's being scanned.
+         * They are more common in higher versions of QR codes.
+         *
+         * @param x The x-coordinate of the alignment marker's center.
+         * @param y The y-coordinate of the alignment marker's center.
+         */
         void ALIGNMENT_MARKER(int x, int y);
 
-        // Applies a given mask pattern to the QR code based on the mask parameter.
-        // Masks are used to ensure the QR code pattern is more evenly distributed.
+        /**
+         * @brief Applies a specified mask pattern to the QR code.
+         *
+         * Masking patterns are used to ensure that the data modules are evenly distributed,
+         * which helps avoid patterns that could confuse QR code readers.
+         *
+         * @param mask The mask pattern to apply.
+         */
         void MASK_APPLY(int mask);
 
-        // Sets the color of a module (cell) at coordinates (x, y).
-        // If isColored is true (or non-zero), the module is set as black (colored).
-        // If isColored is false (or zero), the module is set as white (uncolored).
+        /**
+         * @brief Sets the color of a module (cell) at the specified coordinates (x, y).
+         *
+         * @param x The x-coordinate of the module.
+         * @param y The y-coordinate of the module.
+         * @param isColored Set to `true` to make the module black, `false` to make it white.
+         */
         void SET_MODULE(int x, int y, bool isColored);
 
-        // Returns the color status of the module at coordinates (x, y).
-        // Returns true if the module is colored (black), false if it is uncolored (white).
+        /**
+         * @brief Retrieves the color status of a module at the specified coordinates (x, y).
+         *
+         * @param x The x-coordinate of the module.
+         * @param y The y-coordinate of the module.
+         * @return `true` if the module is colored (black), `false` if it is uncolored (white).
+         */
         bool MODULE(int x, int y);
 
+        /**
+         * @brief Gets the size of the QR code matrix.
+         *
+         * The size is calculated based on the version and is equal to (4 * version + 17).
+         *
+         * @return The size of the QR code matrix.
+         */
         int SIZE_GETTER() const;
 
+        /**
+         * @brief Retrieves the version of the QR code.
+         *
+         * @return The version of the QR code.
+         */
         int VERSION_GETTER() const;
 
+        /**
+         * @brief Retrieves the error correction level used by the QR code.
+         *
+         * @return The error correction level as a `QR::QRCODE::VERSION::ERROR` enum value.
+         */
         QR::QRCODE::VERSION::ERROR ERROR_CORRECTION() const;
 
+
+        
+        /**
+        * @brief Draws the version information pattern on the QR code.
+        *
+        * Version information is included for QR codes version 7 and above.
+        * It contains a 6-bit code and is placed near the alignment patterns.
+        * This function encodes the version number into a pattern that helps scanners
+        * to identify the QR code's version.
+        */
         void DRAW_VERSION();
 
-        void DRAW_FORMAT_BITS();
+
+        /**
+        * @brief Draws the format bits on the QR code based on the specified mask pattern.
+        *
+        * The format bits encode the error correction level and the mask pattern used for the QR code.
+        * These bits are crucial for QR code readers to decode the data correctly and are placed
+        * near the position markers.
+        *
+        * @param mask The mask pattern to be encoded in the format bits.
+        */
+        void DRAW_FORMAT_BITS(int mask);
+
+
+        /**
+        * @brief Retrieves the alignment pattern positions for the current QR code version.
+        *
+        * Alignment patterns are used to ensure proper scanning of the QR code, especially
+        * in larger versions where more precise alignment is needed. This function returns
+        * a vector of integers representing the positions of alignment patterns along the
+        * x and y axes.
+        *
+        * @return A vector of integers containing the positions of alignment patterns.
+        */
+        std::vector<int> ALIGMNET_PATTERN_GETTER();
+
+
+
+        /**
+        * @brief Adds error correction codewords and interleaves them with data codewords for a QR code.
+        *
+        * This function takes a vector of data codewords and calculates the error correction codewords
+        * based on the specified error correction level. It then interleaves the data and error correction
+        * codewords according to the QR code specification, ensuring the output is ready for matrix placement.
+        *
+        * @param data A constant reference to a `std::vector<std::uint8_t>` containing the data codewords
+        *             to be encoded in the QR code.
+        * @return A `std::vector<std::uint8_t>` containing the interleaved data and error correction codewords.
+        *         The returned vector includes both the original data and the computed error correction
+        *         codewords, arranged according to the QR code structure.
+        */
+        std::vector<std::uint8_t> ADD_ECC_INTER(const std::vector<std::uint8_t>& data);
+
+        /**
+        * @brief Prints the current mask pattern matrix of the QR code.
+        *
+        * This function outputs the mask pattern applied to the QR code,
+        * showing which modules (cells) are masked or unmasked. It is primarily
+        * used for debugging and visualization purposes to ensure the mask has
+        * been applied correctly.
+        */
+        void printMask();
+
+
+        /**
+        * @brief Draws all functional patterns onto the QR code matrix.
+        *
+        * This function handles the placement of various functional patterns
+        * that are required for a QR code to be scannable. These include position
+        * markers, alignment patterns, timing patterns, and other necessary structures
+        * like the dark module and reserved areas for format and version information.
+        */
+        void DRAW_FUNCTIONS();
+
 	};
 }
 
@@ -144,7 +351,7 @@ int QR::QRCODE::VERSION::GETBITSERROR(VERSION::ERROR err)
     }
 }
 
-int QR::QRCODE::VERSION::GET_CAPACITY_BITS(int version) const
+int QR::QRCODE::VERSION::GET_CAPACITY_BITS(int version)
 {
     // Check if the provided version is within the valid range (1 to 40)
     if (version > MAX_VERSION || version < MIN_VERSION)
@@ -173,7 +380,7 @@ int QR::QRCODE::VERSION::GET_CAPACITY_BITS(int version) const
     return result;
 }
 
-int QR::QRCODE::VERSION::GET_CAPACITY_CODEWORDS(int version, QR::QRCODE::VERSION::ERROR ecl) const
+int QR::QRCODE::VERSION::GET_CAPACITY_CODEWORDS(int version, QR::QRCODE::VERSION::ERROR ecl)
 {
     // Calculate the capacity in bits for the specified version
     // and convert it to capacity in codewords by dividing by 8.
@@ -232,6 +439,17 @@ void QR::QRCODE::MASK_APPLY(int mask)
         }
     }
 }
+
+void QR::QRCODE::printMask()
+{
+    for (const auto& row : MaskMatrix) {
+        for (bool val : row) {
+            std::cout << (val ? "1" : "0") << " ";
+        }
+        std::cout << std::endl;
+    }
+}
+
 
 // Sets a module in the QR code matrix at (x, y) with a specified color (0 or 1).
 // 'isColored' determines if the module is filled (1) or empty (0).
@@ -297,10 +515,10 @@ inline void QR::QRCODE::DRAW_VERSION()
     }
 }
 
-inline void QR::QRCODE::DRAW_FORMAT_BITS()
+inline void QR::QRCODE::DRAW_FORMAT_BITS(int mask)
 {
-    int data = QR::QRCODE::VERSION::GETBITSERROR(ErrorCorrection);
-    int remainder = data;
+    int data = QR::QRCODE::VERSION::GETBITSERROR(ErrorCorrection) << 3 | mask;
+    int remainder = data;   
     for (int i = 0; i < 10; i++)
         remainder = (remainder << 1) | ((remainder >> 9) * 0X537);
     int bits = (data << 10 | remainder) ^ 0X537;
@@ -320,6 +538,94 @@ inline void QR::QRCODE::DRAW_FORMAT_BITS()
     for (int i = 8; i < 15; i++)
         SET_MODULE(8, size-1-i, BITBUFFER<bool>::BINARY_BITS(bits, i));
     SET_MODULE(8, size - 8, true);
+}
+
+
+
+
+inline std::vector<int> QR::QRCODE::ALIGMNET_PATTERN_GETTER()
+{
+    if (version == 1)
+        return std::vector<int>();
+    else
+    {
+        int num = version / 7 + 2;
+        int step = (version * 8 + num * 3 + 5) / (num * 4 - 4) * 2;
+        std::vector<int> result;
+        for (int i = 0, position = size - 7; i < num; i++, position -= step)
+            result.insert(result.begin(), position);
+        result.insert(result.begin(), 6);
+        return result;
+    }
+}
+
+
+
+inline std::vector<std::uint8_t> QR::QRCODE::ADD_ECC_INTER(const std::vector<std::uint8_t>& data)
+{
+    if (data.size() != static_cast<unsigned int>(QR::QRCODE::VERSION::GET_CAPACITY_CODEWORDS(version, ErrorCorrection)))
+        throw std::invalid_argument("Invalid argument");
+
+    int numBlocks = QR::QRCODE::VERSION::NUM_ERROR_CORRECTION_BLOCKS[static_cast<int>(ErrorCorrection)][version];
+    int blockEcc  = QR::QRCODE::VERSION::ECC_CODEWORDS_PER_BLOCK[static_cast<int>(ErrorCorrection)][version];
+    int rawCodeWords = QR::QRCODE::VERSION::GET_CAPACITY_BITS(version) / 8;
+    int numShortBlocks = numBlocks - rawCodeWords % numBlocks;
+    int shortBlockLen = rawCodeWords / numBlocks;
+
+    std::vector<std::vector<std::uint8_t>> blocks;
+    const std::vector<std::uint8_t> rsDivisor = REEDSOLOMON::COMPUTE_DIVISOR(blockEcc);
+
+    for (int i = 0, k = 0; i < numBlocks; i++) {
+        std::vector<uint8_t> dat(data.cbegin() + k, data.cbegin() + (k + shortBlockLen - blockEcc + (i < numShortBlocks ? 0 : 1)));
+        k += static_cast<int>(dat.size());
+        const std::vector<uint8_t> ecc = QR::REEDSOLOMON::COMPUTE_REMAINDER(dat, rsDivisor);
+        if (i < numShortBlocks)
+            dat.push_back(0);
+        dat.insert(dat.end(), ecc.cbegin(), ecc.cend());
+        blocks.push_back(std::move(dat));
+    }
+
+    std::vector<std::uint8_t> result;
+    for (size_t i = 0; i < blocks[0].size(); i++)
+    {
+        for (size_t j = 0; i < blocks.size(); i++)
+        {
+            if (i != static_cast<unsigned int>(shortBlockLen - blockEcc) ||
+                j <= static_cast<unsigned int>(numShortBlocks))
+                result.push_back(blocks[i][j]);
+        }
+    }
+    assert(result.size() == static_cast<unsigned int>(rawCodeWords));
+    return result;
+}
+
+inline void QR::QRCODE::DRAW_FUNCTIONS()
+{
+    for (int i = 0; i < size; i++)
+    {
+        SET_MODULE(6, i, i % 2 == 0);
+        SET_MODULE(i, 6, i % 2 == 0);
+    }
+
+    POSITION_MARKER(3, 3);
+    POSITION_MARKER(size - 4, 3);
+    POSITION_MARKER(3, size - 4);
+    
+    const std::vector<int> align_patterns = ALIGMNET_PATTERN_GETTER();
+    size_t numAlignmet = align_patterns.size();
+    for (size_t i = 0; i < numAlignmet; i++)
+    {
+        for (size_t j = 0; j < numAlignmet; j++)
+        {
+            if (!(i == 0 && j == 0) || 
+                 (i == 0 && j == numAlignmet - 1) || 
+                 (i == numAlignmet - 1 && j == 0))
+                ALIGNMENT_MARKER(align_patterns[i], align_patterns[j]);
+        }
+    }
+
+    DRAW_FORMAT_BITS(0);
+    DRAW_VERSION();
 }
 
 // Places a position marker at the given (x, y) coordinate.
