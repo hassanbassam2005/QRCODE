@@ -92,14 +92,14 @@ namespace QR
         // Constant vector of boolean values that holds the encoded data.
         // Using a const vector prevents modification of the data after it is set,
         // ensuring that the encoded information remains unchanged throughout the object's lifetime.
-        BITBUFFER<std::vector<std::uint8_t>> Data;
+       std::vector<bool> Data;
 
     public:
         // Constructor that initializes the ENCODE object with a constant reference to a MODE object,
         // an integer bit counter, and a reference to a vector of boolean values.
         // The vector is passed by reference, allowing the constructor to use the existing vector
         // without making a copy, which can be more efficient.
-        ENCODE(const MODE& mode, int bit_counter, BITBUFFER<std::vector<std::uint8_t>>& data) :
+        ENCODE(const MODE& mode, int bit_counter, std::vector<bool>& data) :
             Mode(&mode), Bit_Counter(bit_counter), Data(data)
         {
             if (bit_counter < 0)
@@ -110,7 +110,7 @@ namespace QR
         // an integer bit counter, and an rvalue reference to a vector of boolean values.
         // This constructor uses std::move to transfer ownership of the vector, allowing the
         // constructor to take a temporary vector and avoid unnecessary copies.
-        ENCODE(const MODE& mode, int bit_counter, BITBUFFER<std::vector<std::uint8_t>>&& data) :
+        ENCODE(const MODE& mode, int bit_counter, std::vector<bool>&& data) :
             Mode(&mode), Bit_Counter(bit_counter), Data(std::move(data)) 
         {
             if (bit_counter < 0)
@@ -123,7 +123,7 @@ namespace QR
 
         // Function to retrieve the data as a BITBUFFER, which stores binary data in a vector of uint8_t.
         // Returns a BITBUFFER containing the encoded data.
-        BITBUFFER<std::vector<std::uint8_t>> DATA_GETTER() const;
+        std::vector<bool> DATA_GETTER() const;
 
         // Function to retrieve the size of the encoded data.
         // Returns the size of the encoded data as a size_t value.
@@ -134,7 +134,7 @@ namespace QR
         // - segments: A vector of ENCODE objects representing the segments to be encoded.
         // - version: An integer representing the QR code version (determines the encoding parameters).
         // Returns the total number of bits required as an integer.
-        int GET_TOTAL_BITS(const std::vector<ENCODE>& segments, int version);
+        static int GET_TOTAL_BITS(const std::vector<ENCODE>& segments, int version);
 
     };
 } // End of QR namespace
@@ -215,11 +215,9 @@ QR::ENCODE QR::ENCODE::MODE::NUMERIC_TO_BINARY(const char* input)
     int bit_counter = 0;
     int counter = 0;
     int datas = 0;
-    // Vector to hold the binary representation of the input.
-    std::vector<std::uint8_t> buffer;
 
     // Create a BITBUFFER object that manages appending bits to the buffer.
-    BITBUFFER<std::vector<std::uint8_t>> bit(buffer);
+    BITBUFFER bit;
 
     // Append the bits of the input to the BITBUFFER. 
     // The input is cast to a uint32_t to ensure proper bit representation.
@@ -253,11 +251,9 @@ QR::ENCODE QR::ENCODE::MODE::NUMERIC_TO_BINARY(const char* input)
 QR::ENCODE QR::ENCODE::MODE::ALPHANUMERIC_TO_BINARY(const char* input)
 {
     int counter = 0;
-    // Vector to hold the binary representation of the input.
-    std::vector<std::uint8_t> buffer;
 
     // Create a BITBUFFER object that manages appending bits to the buffer.
-    BITBUFFER<std::vector<std::uint8_t>> bb(buffer);
+    BITBUFFER bb;
 
     // Validate if the input is numeric. If not, throw an exception.
    
@@ -286,11 +282,9 @@ QR::ENCODE QR::ENCODE::MODE::ALPHANUMERIC_TO_BINARY(const char* input)
 
 QR::ENCODE QR::ENCODE::MODE::BYTE_TO_BINARY(const std::vector<std::uint8_t>& input)
 {
-    // Vector to hold the binary representation of the input.
-    std::vector<std::uint8_t> buffer;
 
     // Create a BITBUFFER object that manages appending bits to the buffer.
-    BITBUFFER<std::vector<std::uint8_t>> bit(buffer);
+    BITBUFFER bit;
 
     // Append the bits of the input to the BITBUFFER. 
     // The input is cast to a uint32_t to ensure proper bit representation.
@@ -304,11 +298,8 @@ QR::ENCODE QR::ENCODE::MODE::BYTE_TO_BINARY(const std::vector<std::uint8_t>& inp
 
 QR::ENCODE QR::ENCODE::MODE::ECI_TO_BINARY(long input)
 {
-    // Create a vector to hold the binary data
-    std::vector<std::uint8_t> buffer;
-
     // Create a BITBUFFER object to manage appending bits to the buffer
-    BITBUFFER<std::vector<std::uint8_t>> bit(buffer);
+    BITBUFFER bit;
 
     // Validate the input ECI value
     if (input < 0)
@@ -365,7 +356,7 @@ std::vector<QR::ENCODE> QR::ENCODE::MODE::MODE_CHOOSER(const char* input)
 }
 
 // Getter function to return the binary data buffer.
-inline BITBUFFER<std::vector<std::uint8_t>> QR::ENCODE::DATA_GETTER() const
+inline std::vector<bool> QR::ENCODE::DATA_GETTER() const
 {
     return Data;
 }

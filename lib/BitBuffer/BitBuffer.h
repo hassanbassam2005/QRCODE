@@ -6,18 +6,12 @@
 #include <cmath>
 
 
-// Template class BITBUFFER parameterized by typename BUFF
-template<typename BUFF>
 // Structure BITBUFFER encapsulates a bit buffer that allows for appending bits.
-struct BITBUFFER
+struct BITBUFFER : public std::vector<bool>
 {
-private:
-    // Reference to an instance of BUFF that serves as the underlying bit buffer.
-    BUFF& BIT_BUFFER;
-
 public:
     // Constructor that initializes the BITBUFFER with a reference to the provided buffer.
-    BITBUFFER(BUFF& BUFFER) : BIT_BUFFER(BUFFER) {}
+    BITBUFFER() : std::vector<bool>() {}
 
     static bool BINARY_BITS(long value,int length)
     {
@@ -35,7 +29,7 @@ public:
         for (int i = length - 1; i >= 0; i--)
         {
             // Shift the value right by i and mask with 1 to extract the bit, then store it in the BIT_BUFFER.
-            BIT_BUFFER.push_back(BINARY_BITS(value,i));
+            this->push_back(BINARY_BITS(value,i));
         }
     }
 
@@ -53,16 +47,9 @@ public:
         for (int i = length - 1; i >= 0; i--)
         {
             // Shift the value right by i and mask with 1 to extract the bit, then store it in the BIT_BUFFER.
-            BIT_BUFFER.push_back(((value >> i) & 1) != 0);
+            this->push_back(((value >> i) & 1) != 0);
         }
     }
-
-    // Getter function to return the constant reference to the bit buffer.
-    const BUFF& BUFFER_GETTER() const
-    {
-        return BIT_BUFFER;
-    }
-
 
 };
 #endif

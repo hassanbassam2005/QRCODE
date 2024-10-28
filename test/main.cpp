@@ -9,36 +9,35 @@ using namespace QR;
 //testing the buffer
 static void testing_buffer()
 {
-	std::vector<bool> buffer;
 	int l = 0;
 
-	BITBUFFER<std::vector<bool>> bit(buffer);
+	BITBUFFER bit;
 
 	bit.APPEND_BITS(72);
 	std::cout << "Bits in buffer: ";
-	for (bool bitval : buffer) {
+	for (bool bitval : bit) {
 		std::cout << bitval;
 	}
 	std::cout << std::endl;
 
-	buffer.clear();
+	bit.clear();
 
 	std::cout << "Testing the 2nd eppend... \nenter length of binary :" << std::endl;
 	bit.APPEND_BITS(65, 10);
 	std::cout << "Bits in buffer: ";
-	for (bool bitval : buffer) {
+	for (bool bitval : bit) {
 		std::cout << bitval;
 	}
 	std::cout << std::endl;
 
-	buffer.clear();
+	bit.clear();
 
 	std::cout << "Testing the 3d appnd... ";
 	const char* T = { "H2" };
 	for(;*T != '\0'; T++)
 		bit.APPEND_BITS(static_cast<std::uint32_t>(*T));
 
-	for (bool bitval : buffer)
+	for (bool bitval : bit)
 		std::cout << bitval;
 	std::cout << std::endl;
 }
@@ -71,9 +70,8 @@ static void testing_Mode_()
 static void testing_Mode_Alphanumeric_Numeric()
 {
 	QR::ENCODE encoder = QR::ENCODE::MODE::ALPHANUMERIC_TO_BINARY("HASSAN");
-	BITBUFFER<std::vector<std::uint8_t>> Enca = encoder.DATA_GETTER();
-	const std::vector<std::uint8_t>& binaryData = Enca.BUFFER_GETTER();
-	for (bool bit : binaryData) {
+	
+	for (bool bit : encoder.DATA_GETTER()) {
 		std::cout << bit;
 	}
 	std::cout << std::endl;
@@ -86,9 +84,7 @@ static void testing_Mode_Alphanumeric_Numeric()
 static void testing_Mode_Numeric()
 {
 	QR::ENCODE encoder = QR::ENCODE::MODE::NUMERIC_TO_BINARY("513445");
-	BITBUFFER<std::vector<std::uint8_t>> Enca = encoder.DATA_GETTER();
-	const std::vector<std::uint8_t>& binaryData = Enca.BUFFER_GETTER();
-	for (bool bit : binaryData) {
+	for (bool bit : encoder.DATA_GETTER()) {
 		std::cout << bit;
 	}
 	std::cout << std::endl;
@@ -100,9 +96,8 @@ static void testing_Mode_Byte()
 {
 	std::vector<std::uint8_t> input = { 0x48, 0x65, 0x6C, 0x6C, 0x6F };
 	QR::ENCODE encoder = QR::ENCODE::MODE::BYTE_TO_BINARY(input);
-	BITBUFFER<std::vector<std::uint8_t>> Enca = encoder.DATA_GETTER();
-	const std::vector<std::uint8_t>& binaryData = Enca.BUFFER_GETTER();
-	for (bool bit : binaryData) {
+
+	for (bool bit : encoder.DATA_GETTER()) {
 		std::cout << bit;
 	}
 	std::cout << std::endl;
