@@ -195,19 +195,6 @@ static void testing_capacity()
 	std::cout <<"result2 :" << res2 << std::endl;
 
 }
-
-static void printQR(const QRCODE& qr)
-{
-	int border = 2;
-
-	for (int y = -border; y < qr.SIZE_GETTER() + border; y++) {
-		for (int x = -border; x < qr.SIZE_GETTER() + border; x++) {
-			std::cout << (qr.GET_MODULE(x, y) ? "\033[48;5;0m  \033[0m" : "\033[48;5;15m  \033[0m");
-		}
-		std::cout << std::endl;
-	}
-	std::cout << std::endl;
-}
 	
 
 int main()
@@ -223,7 +210,7 @@ int main()
 	const QRCODE::VERSION::ERROR errorlvl = QRCODE::VERSION::ERROR::HIGH;
 	const QRCODE qr = QRCODE::ENCODE_TEXT(text, errorlvl);
 	IMAGE::DEFAULT::PRINT_QR(qr,5,5,5);
-	std::string svg = toSvgString(qr,4);
+	std::string svg = IMAGE::SVG::SVG_STRING(qr,4);
 	std::string ppm = toPPMString(qr, 4);
 	std::ofstream file("qrcode.svg");
 	std::ofstream files("qrcode.ppm");

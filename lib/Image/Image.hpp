@@ -42,6 +42,15 @@ namespace IMAGE
 		static void PRINT_QR(const QR::QRCODE& qr, int r, int g, int b);
 
 	};
+
+	struct SVG
+	{
+		static std::string SVG_STRING(const QR::QRCODE& qr,int border);
+		static std::string SVG_STRING(const QR::QRCODE& qr, int border,int r, int g,int b);
+	};
+
+
+
 }
 
 #endif
