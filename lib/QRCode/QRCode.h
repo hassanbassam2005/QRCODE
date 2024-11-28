@@ -1,18 +1,19 @@
 #ifndef QRCODE_H
 #define QRCODE_H
 
-#include"../BitBuffer/BitBuffer.h"
-#include "../QREncode/QREncode.h"
-#include"../ReedSolomon/ReedSolomon.h"
-#include "../BitBuffer/BitBuffer.h"
+#include "BitBuffer.h"
+#include "QREncode.h"
+#include "ReedSolomon.h"
+#include "BitBuffer.h"
 
 #include <sstream>
+#include <array>
 
 namespace QR
 {
-	class QRCODE
-	{
-	public:
+    class QRCODE
+    {
+    public:
         class VERSION
         {
         public:
@@ -140,7 +141,12 @@ namespace QR
         std::vector<std::vector<bool>> MaskMatrix;
         std::vector <std::vector<bool>> isMasked;
         int version;
+        int mask;
         QRCODE::VERSION::ERROR ErrorCorrection;
+        static const int PENALTY_N1;
+        static const int PENALTY_N2;
+        static const int PENALTY_N3;
+        static const int PENALTY_N4;
     public:
         /**
          * @brief Constructs a QRCODE object with specified version, error correction level, data codewords, and mask pattern.
@@ -153,28 +159,17 @@ namespace QR
         QRCODE(int VERSION,
             QR::QRCODE::VERSION::ERROR ECL,
             std::vector<std::uint8_t>& DataCodeWords,
-            int MASK)
-            : version(VERSION), ErrorCorrection(ECL)
-        {
-            // Calculate the size of the QR code matrix based on the version.
-            size = version * 4 + 17;
-            size_t sz = static_cast<size_t>(size);
+            int MASK);
 
-            // Set the initial mask pattern.
-            maskPattern = MASK;
+        static QRCODE ENCODE_TEXT(const char* text, QR::QRCODE::VERSION::ERROR ecl);
 
-            // Initialize the QR code's mask matrix with 'false' (light/unfilled modules).
-            MaskMatrix = std::vector<std::vector<bool>>(sz, std::vector<bool>(sz));
+        static QRCODE ENCODE_BINARY(const std::vector<std::uint8_t>& data, QR::QRCODE::VERSION::ERROR ecl);
 
-            // Initialize a matrix to track which modules have been masked.
-            isMasked = std::vector<std::vector<bool>>(sz, std::vector<bool>(sz));
-        }
-
-        QRCODE ENCODE_SEGMENT(const std::vector<ENCODE>& segments, VERSION::ERROR ecl,
-                              int minVersion = 1,
-                              int maxVersion = 40,
-                              int mask = -1,
-                              bool boostEcl = true);
+        static QRCODE ENCODE_SEGMENT(const std::vector<ENCODE>& segments, VERSION::ERROR ecl,
+            int minVersion = 1,
+            int maxVersion = 40,
+            int mask = -1,
+            bool boostEcl = true);
 
         /**
          * @brief Places a position marker (finder pattern) at the specified coordinates (x, y).
@@ -224,7 +219,9 @@ namespace QR
          * @param y The y-coordinate of the module.
          * @return `true` if the module is colored (black), `false` if it is uncolored (white).
          */
-        bool MODULE(int x, int y);
+        bool MODULE(int x, int y) const;
+
+        bool GET_MODULE(int x, int y) const;
 
         /**
          * @brief Gets the size of the QR code matrix.
@@ -250,7 +247,7 @@ namespace QR
         QR::QRCODE::VERSION::ERROR ERROR_CORRECTION() const;
 
 
-        
+
         /**
         * @brief Draws the version information pattern on the QR code.
         *
@@ -284,7 +281,7 @@ namespace QR
         *
         * @return A vector of integers containing the positions of alignment patterns.
         */
-        std::vector<int> ALIGMNET_PATTERN_GETTER();
+        std::vector<int> ALIGMNET_PATTERN_GETTER() const;
 
 
 
@@ -301,7 +298,7 @@ namespace QR
         *         The returned vector includes both the original data and the computed error correction
         *         codewords, arranged according to the QR code structure.
         */
-        std::vector<std::uint8_t> ADD_ECC_INTER(const std::vector<std::uint8_t>& data);
+        std::vector<std::uint8_t> ADD_ECC_INTER(const std::vector<std::uint8_t>& data) const;
 
         /**
         * @brief Prints the current mask pattern matrix of the QR code.
@@ -324,7 +321,16 @@ namespace QR
         */
         void DRAW_FUNCTIONS();
 
-	};
+        void DRAW_CODEWORDS(const std::vector<std::uint8_t>& data);
+
+        int PINALTY_COUNT_PATTERNS(const std::array<int, 7>& runHistory) const;
+
+        int PINALTY_TERMINATE_COUNT(bool currentRunColor, int currentRunLength, std::array<int, 7>& runHistory) const;
+
+        void PENALTY_ADD_HISTORY(int currentRunLength, std::array<int, 7>& runHistory) const;
+
+        long GET_PENALY_SCORE() const;
+    };
 
     class data_too_long : public std::length_error
     {
@@ -333,20 +339,76 @@ namespace QR
     };
 }
 
+QR::QRCODE::QRCODE(int VERSION,
+    QR::QRCODE::VERSION::ERROR ECL,
+    std::vector<std::uint8_t>& DataCodeWords,
+    int MASK)
+    : version(VERSION), ErrorCorrection(ECL)
+{
+    if (VERSION < 1 || VERSION > 40)
+        throw std::domain_error("value out of range");
+    if (MASK < -1 || MASK > 7)
+        throw std::domain_error("value out of range");
+    size = VERSION * 4 + 17;
+
+    size_t sz = static_cast<size_t>(size);
+
+    MaskMatrix = std::vector<std::vector<bool>>(sz, std::vector<bool>(sz));
+    isMasked = std::vector<std::vector<bool>>(sz, std::vector<bool>(sz));
+
+    DRAW_FUNCTIONS();
+    const std::vector<std::uint8_t> allcodewords = ADD_ECC_INTER(DataCodeWords);
+    DRAW_CODEWORDS(allcodewords);
+
+    // Do masking
+    if (MASK == -1) {  // Automatically choose best mask
+        long minPenalty = LONG_MAX;
+        for (int i = 0; i < 8; i++) {
+            MASK_APPLY(i);
+            DRAW_FORMAT_BITS(i);
+            long penalty = GET_PENALY_SCORE();
+            if (penalty < minPenalty) {
+                MASK = i;
+                minPenalty = penalty;
+            }
+            MASK_APPLY(i);  // Undoes the mask due to XOR
+        }
+    }
+    assert(0 <= MASK && MASK <= 7);
+    mask = MASK;
+    MASK_APPLY(MASK);  // Apply the final choice of mask
+    DRAW_FORMAT_BITS(MASK);  // Overwrite old format bits
+
+    isMasked.clear();
+    isMasked.shrink_to_fit();
+
+}
+
+inline QR::QRCODE QR::QRCODE::ENCODE_TEXT(const char* text, QR::QRCODE::VERSION::ERROR ecl)
+{
+    std::vector<ENCODE> segments = ENCODE::MODE::MODE_CHOOSER(text);
+    return ENCODE_SEGMENT(segments, ecl);
+}
+
+inline QR::QRCODE QR::QRCODE::ENCODE_BINARY(const std::vector<std::uint8_t>& data, QR::QRCODE::VERSION::ERROR ecl)
+{
+    std::vector<ENCODE> segments{ ENCODE::MODE::BYTE_TO_BINARY(data) };
+    return ENCODE_SEGMENT(segments, ecl);
+}
 
 inline QR::QRCODE QR::QRCODE::ENCODE_SEGMENT(const std::vector<ENCODE>& segments, VERSION::ERROR ecl,
     int minVersion,
     int maxVersion,
-    int mask,
+    int msk,
     bool boostEcl)
 {
     if (!(VERSION::MIN_VERSION <= minVersion && VERSION::MAX_VERSION >= maxVersion && minVersion <= maxVersion) ||
-        mask <= -1 || mask > 7)
+        msk < -1 || msk > 7)
     {
         throw std::invalid_argument("Invalid value");
     }
 
-    int version = 0, dataUseBits = 0;
+    int version, dataUseBits;
     for (version = minVersion;; version++)
     {
         int dataCapacity = QRCODE::VERSION::GET_CAPACITY_CODEWORDS(version, ecl) * 8;
@@ -368,49 +430,40 @@ inline QR::QRCODE QR::QRCODE::ENCODE_SEGMENT(const std::vector<ENCODE>& segments
     }
     assert(dataUseBits != -1);
 
-    for (VERSION::ERROR newEcl : {VERSION::ERROR::HIGH, VERSION::ERROR::LOW, VERSION::ERROR::QUARTILE})
+    for (VERSION::ERROR newEcl : {VERSION::ERROR::MEDIUM, VERSION::ERROR::QUARTILE, VERSION::ERROR::HIGH})
     {
-        if (boostEcl && dataUseBits <= QR::QRCODE::VERSION::GET_CAPACITY_CODEWORDS(version, newEcl))
+        if (boostEcl && dataUseBits <= QR::QRCODE::VERSION::GET_CAPACITY_CODEWORDS(version, newEcl) * 8)
             ecl = newEcl;
     }
-    
-    BITBUFFER buffer;
-    QR::ENCODE::MODE mode();
 
-    for (const QR::ENCODE& moder : segments)
+    BITBUFFER buffer;
+
+    for (const ENCODE& moder : segments)
     {
-        buffer.APPEND_BITS(static_cast<std::uint32_t>(mode().MODE_BITS()),4);
-        buffer.APPEND_BITS(static_cast<std::uint32_t>(moder.QR::ENCODE::SIZE_GETTER()),
-                           mode().CHAR_COUNTER_BITS(version));
-        buffer.insert(buffer.end(),moder.DATA_GETTER().begin(),
-                      moder.DATA_GETTER().end());
+        buffer.APPEND_BITS(static_cast<uint32_t>(moder.MODE_GETTER().MODE_BITS()), 4);
+        buffer.APPEND_BITS(static_cast<uint32_t>(moder.SIZE_GETTER()),
+            moder.MODE_GETTER().CHAR_COUNTER_BITS(version));
+        buffer.insert(buffer.end(), moder.DATA_GETTER().begin(),
+            moder.DATA_GETTER().end());
     }
-    assert(buffer.BUFFER_GETTER().size() == static_cast<unsigned int>(dataUseBits));
-    size_t data_capacity = static_cast<size_t>(QRCODE::VERSION::GET_CAPACITY_CODEWORDS(version, ecl) * 8);
-    assert(bits.size() <= data_capacity);
+    assert(buffer.size() == static_cast<unsigned int>(dataUseBits));
+    size_t data_capacity = static_cast<size_t>(QRCODE::VERSION::GET_CAPACITY_CODEWORDS(version, ecl)) * 8;
     buffer.APPEND_BITS(0, std::min(4, static_cast<int>(data_capacity - buffer.size())));
-    buffer.APPEND_BITS(0,(8 - static_cast<int>(buffer.size() % 8)) % 8);
-    assert(bits.size() % 8 == 0);
+    buffer.APPEND_BITS(0, (8 - static_cast<int>(buffer.size() % 8)) % 8);
 
     for (std::uint8_t pad_byte = 0xEC; buffer.size() < data_capacity; pad_byte ^= 0xEC ^ 0x11)
         buffer.APPEND_BITS(pad_byte, 8);
-    
+
     std::vector<std::uint8_t> dataCodeWord(buffer.size() / 8);
     for (size_t i = 0; i < buffer.size(); i++)
-        dataCodeWord.at(i >> 3) |= (buffer.at(i) ? 1 : 0) << (7 - (1 & 7));
-    return QRCODE(version, ecl, dataCodeWord, mask);
+        dataCodeWord.at(i >> 3) |= (buffer.at(i) ? 1 : 0) << (7 - (i & 7));
+
+    return QRCODE(version, ecl, dataCodeWord, msk);
 }
 
-
-
-// Getter function to return the encoding mode.
-const QR::ENCODE::MODE* QR::ENCODE::MODE_GETTER()
-{
-    return Mode;
-}
 
 // Function to retrieve the number of bits used for error correction
-    // based on the specified error correction level (ERROR).
+// based on the specified error correction level (ERROR).
 int QR::QRCODE::VERSION::GETBITSERROR(VERSION::ERROR err)
 {
     // Determine the number of bits for the given error correction level
@@ -418,20 +471,15 @@ int QR::QRCODE::VERSION::GETBITSERROR(VERSION::ERROR err)
     {
     case QR::QRCODE::VERSION::ERROR::LOW:
         return 1;  // Return 1 bit for low error correction level
-        break;
     case QR::QRCODE::VERSION::ERROR::MEDIUM:
         return 0;  // Return 0 bits for medium error correction level
-        break;
     case QR::QRCODE::VERSION::ERROR::QUARTILE:
-        return 2;  // Return 2 bits for quartile error correction level
-        break;
+        return 3;  // Return 2 bits for quartile error correction level
     case QR::QRCODE::VERSION::ERROR::HIGH:
-        return 3;  // Return 3 bits for high error correction level
-        break;
+        return 2;  // Return 3 bits for high error correction level
     default:
         // Throw an exception if an unreachable case is encountered
         throw std::logic_error("Unreachable");
-        break;
     }
 }
 
@@ -487,7 +535,7 @@ void QR::QRCODE::MASK_APPLY(int mask)
 
     for (size_t y = 0; y < s; y++)
     {
-        for (size_t x = 0; x < size; x++)
+        for (size_t x = 0; x < s; x++)
         {
             bool invert = false;
             switch (maskPattern)
@@ -505,21 +553,21 @@ void QR::QRCODE::MASK_APPLY(int mask)
                 invert = (x + y) % 3 == 0;
                 break;
             case 4:
-                invert = ((x / 2) + (y / 3)) % 2 == 0;
+                invert = (x / 3 + y / 2) % 2 == 0;
                 break;
             case 5:
-                invert = (x * y) % 2 + (x * y) % 3 == 0;
+                invert = x * y % 2 + x * y % 3 == 0;
                 break;
             case 6:
-                invert = (((x + y) % 2) + ((x + y) % 3)) == 0;
+                invert = (x + y % 2 + x + y % 3) == 0;
                 break;
             case 7:
-                invert = ((x * y) % 3) % 2 == 0;
+                invert = ((x + y) % 2 + x * y % 3) % 2 == 0;
                 break;
             default:
                 throw std::invalid_argument("Invalid mask pattern");
             }
-            if (invert) MaskMatrix[y][x] = MaskMatrix[y][x] ^ (invert & !isMasked[y][x]);
+            MaskMatrix[y][x] = MaskMatrix[y][x] ^ (invert & !isMasked[y][x]);
         }
     }
 }
@@ -549,9 +597,14 @@ inline void QR::QRCODE::SET_MODULE(int x, int y, bool isColored)
 
 // Retrieves the module state (true/false) at position (x, y) from MaskMatrix.
 // Uses uint8_t casting for input parameters for consistency with array access.
-inline bool QR::QRCODE::MODULE(int x, int y)
+inline bool QR::QRCODE::MODULE(int x, int y) const
 {
-    return MaskMatrix[static_cast<std::uint8_t>(x)][static_cast<std::uint8_t>(y)];
+    return MaskMatrix[static_cast<size_t>(y)][static_cast<size_t>(x)];
+}
+
+inline bool QR::QRCODE::GET_MODULE(int x, int y) const
+{
+    return 0 <= x && x < size && 0 <= y && y < size && MODULE(x, y);
 }
 
 // Returns the size of the QR code (width/height).
@@ -581,53 +634,52 @@ inline void QR::QRCODE::DRAW_VERSION()
 
     for (int i = 0; i < 12; i++)
     {
-        remainder <<= 1;
-        if ((remainder << 12) & 1)
-            remainder ^= 0x1F25;
+        remainder = (remainder << 1) ^ ((remainder >> 11) * 0x1F25);
     }
-        
+
     long bits = static_cast<long>(version) << 12 | remainder;
     assert(bits >> 18 == 0);
 
     for (int i = 0; i < 18; i++)
     {
-        bool bit = BITBUFFER::BINARY_BITS(bits,i);
+        bool bit = BITBUFFER::BINARY_BITS(bits, i);
         int row = size - 11 + i % 3;
         int column = i / 3;
         QR::QRCODE::SET_MODULE(row, column, bit);
-        QR::QRCODE::SET_MODULE(row, column, bit);
+        QR::QRCODE::SET_MODULE(column, row, bit);
     }
 }
 
 inline void QR::QRCODE::DRAW_FORMAT_BITS(int mask)
 {
-    int data = QR::QRCODE::VERSION::GETBITSERROR(ErrorCorrection) << 3 | mask;
-    int remainder = data;   
+    int data = QRCODE::VERSION::GETBITSERROR(ErrorCorrection) << 3 | mask;
+    int rem = data;
     for (int i = 0; i < 10; i++)
-        remainder = (remainder << 1) | ((remainder >> 9) * 0X537);
-    int bits = (data << 10 | remainder) ^ 0X537;
+        rem = (rem << 1) ^ ((rem >> 9) * 0x537);
+    int bits = (data << 10 | rem) ^ 0x5412;
     assert(bits >> 15 == 0);
 
     for (int i = 0; i <= 5; i++)
-        SET_MODULE(8, i, BITBUFFER::BINARY_BITS(bits, i));
+        SET_MODULE(8, i, ((bits >> i) & 1) != 0);
 
-    SET_MODULE(8, 7, BITBUFFER::BINARY_BITS(bits, 6));
-    SET_MODULE(7, 8, BITBUFFER::BINARY_BITS(bits, 7));
-    SET_MODULE(7, 8, BITBUFFER::BINARY_BITS(bits, 8));
-    
+    SET_MODULE(8, 7, ((bits >> 6) & 1) != 0);
+    SET_MODULE(7, 8, ((bits >> 7) & 1) != 0);
+    SET_MODULE(7, 8, ((bits >> 8) & 1) != 0);
+
     for (int i = 9; i < 15; i++)
-        SET_MODULE(14, -i, BITBUFFER::BINARY_BITS(bits, i));
+        SET_MODULE(14 - i, 8, ((bits >> i) & 1) != 0);
+
     for (int i = 0; i < 8; i++)
-        SET_MODULE(size - 1 - i, 8, BITBUFFER::BINARY_BITS(bits, i));
+        SET_MODULE(size - 1 - i, 8, ((bits >> i) & 1) != 0);
+
     for (int i = 8; i < 15; i++)
-        SET_MODULE(8, size-1-i, BITBUFFER::BINARY_BITS(bits, i));
+        SET_MODULE(8, size - 15 + i, ((bits >> i) & 1) != 0);
+
     SET_MODULE(8, size - 8, true);
 }
 
 
-
-
-inline std::vector<int> QR::QRCODE::ALIGMNET_PATTERN_GETTER()
+std::vector<int> QR::QRCODE::ALIGMNET_PATTERN_GETTER() const
 {
     if (version == 1)
         return std::vector<int>();
@@ -636,7 +688,7 @@ inline std::vector<int> QR::QRCODE::ALIGMNET_PATTERN_GETTER()
         int num = version / 7 + 2;
         int step = (version * 8 + num * 3 + 5) / (num * 4 - 4) * 2;
         std::vector<int> result;
-        for (int i = 0, position = size - 7; i < num; i++, position -= step)
+        for (int i = 0, position = size - 7; i < num - 1; i++, position -= step)
             result.insert(result.begin(), position);
         result.insert(result.begin(), 6);
         return result;
@@ -645,13 +697,13 @@ inline std::vector<int> QR::QRCODE::ALIGMNET_PATTERN_GETTER()
 
 
 
-inline std::vector<std::uint8_t> QR::QRCODE::ADD_ECC_INTER(const std::vector<std::uint8_t>& data)
+inline std::vector<std::uint8_t> QR::QRCODE::ADD_ECC_INTER(const std::vector<std::uint8_t>& data) const
 {
     if (data.size() != static_cast<unsigned int>(QR::QRCODE::VERSION::GET_CAPACITY_CODEWORDS(version, ErrorCorrection)))
         throw std::invalid_argument("Invalid argument");
 
     int numBlocks = QR::QRCODE::VERSION::NUM_ERROR_CORRECTION_BLOCKS[static_cast<int>(ErrorCorrection)][version];
-    int blockEcc  = QR::QRCODE::VERSION::ECC_CODEWORDS_PER_BLOCK[static_cast<int>(ErrorCorrection)][version];
+    int blockEcc = QR::QRCODE::VERSION::ECC_CODEWORDS_PER_BLOCK[static_cast<int>(ErrorCorrection)][version];
     int rawCodeWords = QR::QRCODE::VERSION::GET_CAPACITY_BITS(version) / 8;
     int numShortBlocks = numBlocks - rawCodeWords % numBlocks;
     int shortBlockLen = rawCodeWords / numBlocks;
@@ -672,11 +724,11 @@ inline std::vector<std::uint8_t> QR::QRCODE::ADD_ECC_INTER(const std::vector<std
     std::vector<std::uint8_t> result;
     for (size_t i = 0; i < blocks[0].size(); i++)
     {
-        for (size_t j = 0; i < blocks.size(); i++)
+        for (size_t j = 0; j < blocks.size(); j++)
         {
             if (i != static_cast<unsigned int>(shortBlockLen - blockEcc) ||
-                j <= static_cast<unsigned int>(numShortBlocks))
-                result.push_back(blocks[i][j]);
+                j >= static_cast<unsigned int>(numShortBlocks))
+                result.push_back(blocks[j][i]);
         }
     }
     assert(result.size() == static_cast<unsigned int>(rawCodeWords));
@@ -694,22 +746,50 @@ inline void QR::QRCODE::DRAW_FUNCTIONS()
     POSITION_MARKER(3, 3);
     POSITION_MARKER(size - 4, 3);
     POSITION_MARKER(3, size - 4);
-    
+
     const std::vector<int> align_patterns = ALIGMNET_PATTERN_GETTER();
     size_t numAlignmet = align_patterns.size();
     for (size_t i = 0; i < numAlignmet; i++)
     {
         for (size_t j = 0; j < numAlignmet; j++)
         {
-            if (!(i == 0 && j == 0) || 
-                 (i == 0 && j == numAlignmet - 1) || 
-                 (i == numAlignmet - 1 && j == 0))
+            if (!((i == 0 && j == 0) ||
+                (i == 0 && j == numAlignmet - 1) ||
+                (i == numAlignmet - 1 && j == 0)))
                 ALIGNMENT_MARKER(align_patterns[i], align_patterns[j]);
         }
     }
 
     DRAW_FORMAT_BITS(0);
     DRAW_VERSION();
+}
+
+inline void QR::QRCODE::DRAW_CODEWORDS(const std::vector<std::uint8_t>& data)
+{
+    if (data.size() != static_cast<unsigned int>(QRCODE::VERSION::GET_CAPACITY_BITS(version) / 8))
+        throw std::domain_error("invalid argument");
+
+    size_t i = 0;
+
+    for (int right = size - 1; right >= 1; right -= 2)
+    {
+        if (right == 6)
+            right = 5;
+        for (int vert = 0; vert < size; vert++) {  // Vertical counter  
+            for (int j = 0; j < 2; j++) {
+                size_t x = static_cast<size_t>(right - j);  // Actual x coordinate
+                bool upward = ((right + 1) & 2) == 0;
+                size_t y = static_cast<size_t>(upward ? size - 1 - vert : vert);  // Actual y coordinate
+                if (!isMasked.at(y).at(x) && i < data.size() * 8) {
+                    MaskMatrix.at(y).at(x) = BITBUFFER::BINARY_BITS(data.at(i >> 3), 7 - static_cast<int>(i & 7));
+                    i++;
+                }
+                // If this QR Code has any remainder bits (0 to 7), they were assigned as
+                // 0/false/light by the constructor and are left unchanged by this method
+            }
+        }
+    }
+    assert(i == data.size() * 8);
 }
 
 // Places a position marker at the given (x, y) coordinate.
@@ -736,10 +816,126 @@ inline void QR::QRCODE::ALIGNMENT_MARKER(int x, int y)
     for (int dy = -2; dy <= 2; dy++)
     {
         for (int dx = -2; dx <= 2; dx++)
-            QR::QRCODE::SET_MODULE(x + dx, y + dy, std::max(std::abs(dx), std::abs(dy)));
+            QR::QRCODE::SET_MODULE(x + dx, y + dy, std::max(std::abs(dx), std::abs(dy)) != 1);
     }
 }
 
+inline int QR::QRCODE::PINALTY_COUNT_PATTERNS(const std::array<int, 7>& runHistory) const
+{
+    int n = runHistory[1];
+    assert(n <= size * 3);
+    bool core = n > 0 &&
+        runHistory[2] == n &&
+        runHistory[3] == n * 3 &&
+        runHistory[4] == n &&
+        runHistory[5] == n;
+    return (core && runHistory.at(0) >= n * 4 && runHistory.at(6) >= n ? 1 : 0)
+        + (core && runHistory.at(6) >= n * 4 && runHistory.at(0) >= n ? 1 : 0);
+}
+
+inline int QR::QRCODE::PINALTY_TERMINATE_COUNT(bool currentRunColor, int currentRunLength, std::array<int, 7>& runHistory) const
+{
+    if (currentRunColor) {  // Terminate dark run
+        PENALTY_ADD_HISTORY(currentRunLength, runHistory);
+        currentRunLength = 0;
+    }
+    currentRunLength += size;  // Add light border to final run
+    PENALTY_ADD_HISTORY(currentRunLength, runHistory);
+    return PINALTY_COUNT_PATTERNS(runHistory);
+}
+
+inline void QR::QRCODE::PENALTY_ADD_HISTORY(int currentRunLength, std::array<int, 7>& runHistory) const
+{
+    if (runHistory.at(0) == 0)
+        currentRunLength += size;  // Add light border to initial run
+    std::copy_backward(runHistory.cbegin(), runHistory.cend() - 1, runHistory.end());
+    runHistory.at(0) = currentRunLength;
+}
+
+inline long QR::QRCODE::GET_PENALY_SCORE() const
+{
+    long result = 0;
+
+    for (int y = 0; y < size; y++) {
+        bool runColor = false;
+        int runX = 0;
+        std::array<int, 7> runHistory = {};
+        for (int x = 0; x < size; x++) {
+            if (MODULE(x, y) == runColor) {
+                runX++;
+                if (runX == 5)
+                    result += PENALTY_N1;
+                else if (runX > 5)
+                    result++;
+            }
+            else {
+                PENALTY_ADD_HISTORY(runX, runHistory);
+                if (!runColor)
+                    result += PINALTY_COUNT_PATTERNS(runHistory) * PENALTY_N3;
+                runColor = MODULE(x, y);
+                runX = 1;
+            }
+        }
+        result += PINALTY_TERMINATE_COUNT(runColor, runX, runHistory) * PENALTY_N3;
+    }
+    // Adjacent modules in column having same color, and finder-like patterns
+    for (int x = 0; x < size; x++) {
+        bool runColor = false;
+        int runY = 0;
+        std::array<int, 7> runHistory = {};
+        for (int y = 0; y < size; y++) {
+            if (MODULE(x, y) == runColor) {
+                runY++;
+                if (runY == 5)
+                    result += PENALTY_N1;
+                else if (runY > 5)
+                    result++;
+            }
+            else {
+                PENALTY_ADD_HISTORY(runY, runHistory);
+                if (!runColor)
+                    result += PINALTY_COUNT_PATTERNS(runHistory) * PENALTY_N3;
+                runColor = MODULE(x, y);
+                runY = 1;
+            }
+        }
+        result += PINALTY_TERMINATE_COUNT(runColor, runY, runHistory) * PENALTY_N3;
+    }
+
+    // 2*2 blocks of modules having same color
+    for (int y = 0; y < size - 1; y++) {
+        for (int x = 0; x < size - 1; x++) {
+            bool  color = MODULE(x, y);
+            if (color == MODULE(x + 1, y) &&
+                color == MODULE(x, y + 1) &&
+                color == MODULE(x + 1, y + 1))
+                result += PENALTY_N2;
+        }
+    }
+
+    // Balance of dark and light modules
+    int dark = 0;
+    for (const std::vector<bool>& row : MaskMatrix) {
+        for (bool color : row) {
+            if (color)
+                dark++;
+        }
+    }
+    int total = size * size;  // Note that size is odd, so dark/total != 1/2
+    // Compute the smallest integer k >= 0 such that (45-5k)% <= dark/total <= (55+5k)%
+    int k = static_cast<int>((std::abs(dark * 20L - total * 10L) + total - 1) / total) - 1;
+    assert(0 <= k && k <= 9);
+    result += k * PENALTY_N4;
+    assert(0 <= result && result <= 2568888L);  // Non-tight upper bound based on default values of PENALTY_N1, ..., N4
+    return result;
+
+
+}
+
+const int QR::QRCODE::PENALTY_N1 = 3;
+const int QR::QRCODE::PENALTY_N2 = 3;
+const int QR::QRCODE::PENALTY_N3 = 40;
+const int QR::QRCODE::PENALTY_N4 = 10;
 
 const int8_t QR::QRCODE::VERSION::ECC_CODEWORDS_PER_BLOCK[4][41] = {
     //0,  1,  2,  3,  4,  5,  6,  7,  8,  9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40    Error correction level
@@ -757,7 +953,7 @@ const int8_t QR::QRCODE::VERSION::NUM_ERROR_CORRECTION_BLOCKS[4][41] = {
     {-1, 1, 1, 2, 4, 4, 4, 5, 6, 8, 8, 11, 11, 16, 16, 18, 16, 19, 21, 25, 25, 25, 34, 30, 32, 35, 37, 40, 42, 45, 48, 51, 54, 57, 60, 63, 66, 70, 74, 77, 81},  // High
 };
 
-QR::data_too_long::data_too_long(const std::string& message) : 
-    std::length_error(message){}
+QR::data_too_long::data_too_long(const std::string& message) :
+    std::length_error(message) {}
 
 #endif

@@ -74,12 +74,14 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="QREncode\QREncode.h" />
+    <ClCompile Include="Image\Image.cpp" />
+    <ClCompile Include="QRCode\QREncode.h" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="BitBuffer\BitBuffer.h" />
+    <ClInclude Include="Image\Image.hpp" />
+    <ClInclude Include="QRCode\BitBuffer.h" />
     <ClInclude Include="QRCode\QRCode.h" />
-    <ClInclude Include="ReedSolomon\ReedSolomon.h" />
+    <ClInclude Include="QRCode\ReedSolomon.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

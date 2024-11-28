@@ -15,18 +15,24 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="QREncode\QREncode.h">
+    <ClCompile Include="QRCode\QREncode.h">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Image\Image.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="BitBuffer\BitBuffer.h">
+    <ClInclude Include="QRCode\BitBuffer.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="ReedSolomon\ReedSolomon.h">
+    <ClInclude Include="QRCode\ReedSolomon.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="QRCode\QRCode.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Image\Image.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

@@ -1,8 +1,11 @@
-#include "QRCode.h"
+﻿#include "QRCode.h"
 
+#include "../../QRCODE/lib/Image/Image.cpp"
 
 #include <iostream>
 #include <string>
+#include <fstream>
+
 
 using namespace QR;
 
@@ -77,7 +80,6 @@ static void testing_Mode_Alphanumeric_Numeric()
 	std::cout << std::endl;
 
 	std::cout << encoder.SIZE_GETTER() << std::endl;
-	std::cout << encoder.MODE_GETTER() << std::endl;
 	
 }
 
@@ -94,7 +96,8 @@ static void testing_Mode_Numeric()
 
 static void testing_Mode_Byte()
 {
-	std::vector<std::uint8_t> input = { 0x48, 0x65, 0x6C, 0x6C, 0x6F };
+	std::vector<std::uint8_t> input = { 0x68, 0x74, 0x74, 0x70, 0x73, 0x3A, 0x2F, 0x2F, 0x77, 0x77, 0x77, 0x2E,
+										0x79, 0x6F, 0x75, 0x74, 0x75, 0x62, 0x65, 0x2E, 0x63, 0x6F, 0x6D, 0x2F };
 	QR::ENCODE encoder = QR::ENCODE::MODE::BYTE_TO_BINARY(input);
 
 	for (bool bit : encoder.DATA_GETTER()) {
@@ -123,15 +126,89 @@ static void tetsing_Version()
 	std::cout << std::endl;
 }
 
+static std::string toSvgString(const QRCODE& qr, int border) {
+	if (border < 0)
+		throw std::domain_error("Border must be non-negative");
+	if (border > INT_MAX / 2 || border * 2 > INT_MAX - qr.SIZE_GETTER())
+		throw std::overflow_error("Border too large");
+
+	std::ostringstream sb;
+	sb << "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n";
+	sb << "<!DOCTYPE svg PUBLIC \"-//W3C//DTD SVG 1.1//EN\" \"http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd\">\n";
+	sb << "<svg xmlns=\"http://www.w3.org/2000/svg\" version=\"1.1\" viewBox=\"0 0 ";
+	sb << (qr.SIZE_GETTER() + border * 2) << " " << (qr.SIZE_GETTER() + border * 2) << "\" stroke=\"none\">\n";
+	sb << "\t<rect width=\"100%\" height=\"100%\" fill=\"#FFFFFF\"/>\n";
+	sb << "\t<path d=\"";
+	for (int y = 0; y < qr.SIZE_GETTER(); y++) {
+		for (int x = 0; x < qr.SIZE_GETTER(); x++) {
+			if (qr.GET_MODULE(x, y)) {
+				if (x != 0 || y != 0)
+					sb << " ";
+				sb << "M" << (x + border) << "," << (y + border) << "h1v1h-1z";
+			}
+		}
+	}
+	sb << "\" fill=\"#000000\"/>\n";
+	sb << "</svg>\n";
+	return sb.str();
+}
+
+static std::string toPPMString(const QRCODE& qr, int border)
+{
+	int size = qr.SIZE_GETTER();
+	int imageSize = size + 2 * border; // Include the border in the output size
+
+	// Initialize the PPM header
+	std::string ppm = "P3\n";
+	ppm += std::to_string(imageSize) + " " + std::to_string(imageSize) + "\n";
+	ppm += "255\n"; // Max color value
+
+	// Loop through each pixel in the output image
+	for (int y = -border; y < size + border; ++y) {
+		for (int x = -border; x < size + border; ++x) {
+			if (x < 0 || y < 0 || x >= size || y >= size) {
+				// Border area: White
+				ppm += "255 255 255 ";
+			}
+			else {
+				// Inside QR code: Black or White
+				if (qr.GET_MODULE(x, y)) {
+					ppm += "0 0 0 "; // Black
+				}
+				else {
+					ppm += "255 255 255 "; // White
+				}
+			}
+		}
+		ppm += "\n"; // New line for each row
+	}
+
+	return ppm;
+}
+
 static void testing_capacity()
 {
 	QRCODE::VERSION qr1;
 	int res1 = qr1.GET_CAPACITY_BITS(40);
 	std::cout <<"result1 :" << res1 << std::endl;
-	int res2 = qr1.GET_CAPACITY_CODEWORDS(40,QRCODE::VERSION::ERROR::HIGH);
+	int res2 = qr1.GET_CAPACITY_CODEWORDS(40,QRCODE::VERSION::ERROR::LOW);
 	std::cout <<"result2 :" << res2 << std::endl;
 
 }
+
+static void printQR(const QRCODE& qr)
+{
+	int border = 2;
+
+	for (int y = -border; y < qr.SIZE_GETTER() + border; y++) {
+		for (int x = -border; x < qr.SIZE_GETTER() + border; x++) {
+			std::cout << (qr.GET_MODULE(x, y) ? "\033[48;5;0m  \033[0m" : "\033[48;5;15m  \033[0m");
+		}
+		std::cout << std::endl;
+	}
+	std::cout << std::endl;
+}
+	
 
 int main()
 {
@@ -141,5 +218,17 @@ int main()
 	//testing_Mode_Alphanumeric_Numeric();
 	//testing_Mode_Byte();
 	//tetsing_Version();
-	testing_capacity();
+	//testing_capacity();
+	const char* text = "https://www.youtube.com/";
+	const QRCODE::VERSION::ERROR errorlvl = QRCODE::VERSION::ERROR::HIGH;
+	const QRCODE qr = QRCODE::ENCODE_TEXT(text, errorlvl);
+	IMAGE::DEFAULT::PRINT_QR(qr,5,5,5);
+	std::string svg = toSvgString(qr,4);
+	std::string ppm = toPPMString(qr, 4);
+	std::ofstream file("qrcode.svg");
+	std::ofstream files("qrcode.ppm");
+	file << svg;
+	files << ppm;
+	std::cout << svg;
+
 }

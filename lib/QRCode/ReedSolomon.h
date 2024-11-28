@@ -76,21 +76,10 @@ namespace QR
 
 std::uint8_t QR::REEDSOLOMON::GF_MULTIPLY(uint8_t x, uint8_t y)
 {
-    uint16_t z = 0; // Initialize result as 16-bit to handle intermediate overflow
-
-    // Russian peasant multiplication algorithm
+    int z = 0;
     for (int i = 7; i >= 0; i--) {
-        z <<= 1; // Shift result left (equivalent to multiplying by 2 in GF(2^8))
-
-        // Modulo reduction by the irreducible polynomial 0x11D if z exceeds 8 bits
-        if (z & 0x100) {
-            z ^= 0x11D;
-        }
-
-        // If the current bit of y is 1, XOR x into z (add the product)
-        if ((y >> i) & 1) {
-            z ^= x;
-        }
+        z = (z << 1) ^ ((z >> 7) * 0x11D);
+        z ^= ((y >> i) & 1) * x;
     }
     assert(z >> 8 == 0);
     return static_cast<uint8_t>(z);
@@ -102,7 +91,7 @@ std::vector<std::uint8_t> QR::REEDSOLOMON::COMPUTE_DIVISOR(int a)
     if (a < 1 || a > 255) throw std::domain_error("out of range");
 
     std::vector<std::uint8_t> result(static_cast<size_t>(a));
-    result.at(result.size()-1) = 1; //Initialize the highest degree term to 1
+    result.at(result.size() - 1) = 1; //Initialize the highest degree term to 1
     std::uint8_t root = 1; // Start with the generator element
     for (int i = 0; i < a; i++)
     {
@@ -124,36 +113,14 @@ inline std::vector<std::uint8_t> QR::REEDSOLOMON::COMPUTE_REMAINDER(
     const std::vector<std::uint8_t>& data, 
     const std::vector<std::uint8_t>& divisor)
 {
-    // Initialize the result vector to the same size as the divisor. This will
-    // store the remainder during the division process.
-    std::vector<std::uint8_t> result(divisor.size());
-
-    // Iterate over each byte of the input data.
-    for (std::uint8_t b : data)
-    {
-        // Calculate the "factor" for the current division step.
-        // The first element of the result is used as the leading coefficient
-        // for the current step of polynomial division.
-        std::uint8_t factor = b ^ result[0];
-
-        // Shift the result to the left (simulating polynomial division).
-        // The first element is removed, and a 0 is appended to the end.
-        for (size_t i = 0; i < result.size() -1 ; i++)
-            result[i] = result[i + 1];
-        result.back() = 0;
-
-        // Now we apply the division step by multiplying each element of the divisor
-        // by the factor, and then XORing it with the corresponding element in the result.
-        for (size_t i = 0; i < divisor.size(); i++)
-        {
-            // Multiply the current divisor element by the factor using GF(2^8) multiplication
-            // and XOR it with the current result element.
-            result[i] ^= GF_MULTIPLY(divisor[i], factor);
-        }
+    std::vector<uint8_t> result(divisor.size());
+    for (uint8_t b : data) {  // Polynomial division
+        uint8_t factor = b ^ result.at(0);
+        result.erase(result.begin());
+        result.push_back(0);
+        for (size_t i = 0; i < result.size(); i++)
+            result.at(i) ^= QR::REEDSOLOMON::GF_MULTIPLY(divisor.at(i), factor);
     }
-
-    // After processing all the data bytes, the remainder is stored in the `result` vector,
-    // which now contains the error correction codewords.
     return result;
 }
 

@@ -6,7 +6,7 @@
 #include <vector>
 #include <cstdlib>
 #include <cassert>
-#include"../../lib/BitBuffer/BitBuffer.h"
+#include"BitBuffer.h"
 
 // QR namespace that encapsulates the QR code-related functionality
 namespace QR
@@ -119,15 +119,15 @@ namespace QR
 
         // Function to retrieve a pointer to the current encoding mode.
         // Returns a pointer to a constant MODE object, which represents the encoding mode being used.
-        const MODE* MODE_GETTER();
+        const MODE& MODE_GETTER() const;
 
         // Function to retrieve the data as a BITBUFFER, which stores binary data in a vector of uint8_t.
         // Returns a BITBUFFER containing the encoded data.
-        std::vector<bool> DATA_GETTER() const;
+        const std::vector<bool> &DATA_GETTER() const;
 
         // Function to retrieve the size of the encoded data.
         // Returns the size of the encoded data as a size_t value.
-        size_t SIZE_GETTER() const;
+        int SIZE_GETTER() const;
 
         // Function to calculate the total number of bits required for encoding the given segments.
         // Parameters:
@@ -139,6 +139,10 @@ namespace QR
     };
 } // End of QR namespace
 
+const QR::ENCODE::MODE& QR::ENCODE::MODE_GETTER() const
+{   
+    return* Mode;
+}
 
 // Constants
 // Definition of static constant modes, initialized with their mode indicators and character count bits
@@ -204,7 +208,7 @@ int QR::ENCODE::MODE::MODE_BITS() const
 // versions that have different bit requirements for the character count.
 int QR::ENCODE::MODE::CHAR_COUNTER_BITS(int version) const
 {
-    return charCountBits[version < 10 ? 0 : (version < 27 ? 1 : 2)];
+    return charCountBits[(version + 7) /17];
 }
 
 // Template function to convert a numeric input of any type to a binary representation.
@@ -293,7 +297,7 @@ QR::ENCODE QR::ENCODE::MODE::BYTE_TO_BINARY(const std::vector<std::uint8_t>& inp
         bit.APPEND_BITS(b,8);
     }
 
-    return ENCODE(MODE::NUMERIC, static_cast<int>(input.size()), std::move(bit));
+    return ENCODE(MODE::BYTE, static_cast<int>(input.size()), std::move(bit));
 }
 
 QR::ENCODE QR::ENCODE::MODE::ECI_TO_BINARY(long input)
@@ -356,13 +360,13 @@ std::vector<QR::ENCODE> QR::ENCODE::MODE::MODE_CHOOSER(const char* input)
 }
 
 // Getter function to return the binary data buffer.
-inline std::vector<bool> QR::ENCODE::DATA_GETTER() const
+inline const std::vector<bool> &QR::ENCODE::DATA_GETTER() const
 {
     return Data;
 }
 
 // Getter function to return the size of the bit counter.
-inline size_t QR::ENCODE::SIZE_GETTER() const
+inline int QR::ENCODE::SIZE_GETTER() const
 {
     return Bit_Counter;
 }
@@ -390,11 +394,11 @@ inline int QR::ENCODE::GET_TOTAL_BITS(const std::vector<ENCODE>& segments, int v
         result += 4 + ccbits;
 
         // Ensure that the size of the segment does not exceed the remaining capacity of INT_MAX
-        if (segs.SIZE_GETTER() > static_cast<unsigned int>(INT_MAX - result))
+        if (segs.Data.size() > static_cast<unsigned int>(INT_MAX - result))
             return -1; // Return -1 to indicate an error
 
         // Add the size of the segment to the total bit count
-        result += static_cast<int>(segs.SIZE_GETTER());
+        result += static_cast<int>(segs.Data.size());
     }
 
     // Return the total bit count for all segments
