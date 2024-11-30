@@ -138,7 +138,7 @@ namespace QR
     private:
         int size;
         int maskPattern;
-        std::vector<std::vector<bool>> MaskMatrix;
+        std::vector<std::vector<bool>> Matrix;
         std::vector <std::vector<bool>> isMasked;
         int version;
         int mask;
@@ -330,6 +330,9 @@ namespace QR
         void PENALTY_ADD_HISTORY(int currentRunLength, std::array<int, 7>& runHistory) const;
 
         long GET_PENALY_SCORE() const;
+
+        const std::vector<std::vector<bool>> MATRIX_GETTER() const;
+        
     };
 
     class data_too_long : public std::length_error
@@ -353,7 +356,7 @@ QR::QRCODE::QRCODE(int VERSION,
 
     size_t sz = static_cast<size_t>(size);
 
-    MaskMatrix = std::vector<std::vector<bool>>(sz, std::vector<bool>(sz));
+    Matrix = std::vector<std::vector<bool>>(sz, std::vector<bool>(sz));
     isMasked = std::vector<std::vector<bool>>(sz, std::vector<bool>(sz));
 
     DRAW_FUNCTIONS();
@@ -567,14 +570,14 @@ void QR::QRCODE::MASK_APPLY(int mask)
             default:
                 throw std::invalid_argument("Invalid mask pattern");
             }
-            MaskMatrix[y][x] = MaskMatrix[y][x] ^ (invert & !isMasked[y][x]);
+            Matrix[y][x] = Matrix[y][x] ^ (invert & !isMasked[y][x]);
         }
     }
 }
 
 void QR::QRCODE::printMask()
 {
-    for (const auto& row : MaskMatrix) {
+    for (const auto& row : Matrix) {
         for (bool val : row) {
             std::cout << (val ? "1" : "0") << " ";
         }
@@ -591,7 +594,7 @@ inline void QR::QRCODE::SET_MODULE(int x, int y, bool isColored)
     size_t dx = static_cast<size_t>(x);
     size_t dy = static_cast<size_t>(y);
 
-    MaskMatrix[dy][dx] = isColored;  // Set the color of the module in the MaskMatrix.
+    Matrix[dy][dx] = isColored;  // Set the color of the module in the MaskMatrix.
     isMasked[dy][dx] = true;         // Mark the module as masked.
 }
 
@@ -599,7 +602,7 @@ inline void QR::QRCODE::SET_MODULE(int x, int y, bool isColored)
 // Uses uint8_t casting for input parameters for consistency with array access.
 inline bool QR::QRCODE::MODULE(int x, int y) const
 {
-    return MaskMatrix[static_cast<size_t>(y)][static_cast<size_t>(x)];
+    return Matrix[static_cast<size_t>(y)][static_cast<size_t>(x)];
 }
 
 inline bool QR::QRCODE::GET_MODULE(int x, int y) const
@@ -781,7 +784,7 @@ inline void QR::QRCODE::DRAW_CODEWORDS(const std::vector<std::uint8_t>& data)
                 bool upward = ((right + 1) & 2) == 0;
                 size_t y = static_cast<size_t>(upward ? size - 1 - vert : vert);  // Actual y coordinate
                 if (!isMasked.at(y).at(x) && i < data.size() * 8) {
-                    MaskMatrix.at(y).at(x) = BITBUFFER::BINARY_BITS(data.at(i >> 3), 7 - static_cast<int>(i & 7));
+                    Matrix.at(y).at(x) = BITBUFFER::BINARY_BITS(data.at(i >> 3), 7 - static_cast<int>(i & 7));
                     i++;
                 }
                 // If this QR Code has any remainder bits (0 to 7), they were assigned as
@@ -915,7 +918,7 @@ inline long QR::QRCODE::GET_PENALY_SCORE() const
 
     // Balance of dark and light modules
     int dark = 0;
-    for (const std::vector<bool>& row : MaskMatrix) {
+    for (const std::vector<bool>& row : Matrix) {
         for (bool color : row) {
             if (color)
                 dark++;
@@ -930,6 +933,11 @@ inline long QR::QRCODE::GET_PENALY_SCORE() const
     return result;
 
 
+}
+
+inline const std::vector<std::vector<bool>> QR::QRCODE::MATRIX_GETTER() const
+{
+    return Matrix;
 }
 
 const int QR::QRCODE::PENALTY_N1 = 3;

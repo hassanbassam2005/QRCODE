@@ -4,6 +4,7 @@
 #include "../../lib/QRCode/QRCode.h"
 
 #include <cstdint>
+#include <fstream>
 
 namespace IMAGE
 {
@@ -21,7 +22,8 @@ namespace IMAGE
 		* @param b Blue component (0-255).
 		* @return int The 8-bit ANSI color index corresponding to the RGB values.
 		*/
-		static int COSTUME_COLOR_RGB(int r, int g, int b);
+		static int BLEND_ANSI_COLOR(int r, int g, int b);
+		
 	};
 
 	struct DEFAULT
@@ -41,12 +43,32 @@ namespace IMAGE
 		 */
 		static void PRINT_QR(const QR::QRCODE& qr, int r, int g, int b);
 
+		static void PRINT_QR(const QR::QRCODE& qr, int color);
+
 	};
 
 	struct SVG
 	{
-		static std::string SVG_STRING(const QR::QRCODE& qr,int border);
-		static std::string SVG_STRING(const QR::QRCODE& qr, int border,int r, int g,int b);
+		/**
+		* @brief Generates an SVG string representation of the QR code with a default black and white color scheme.
+		*
+		* @param qr The QR code object to generate the SVG from.
+		* @param border The size of the border around the QR code in the SVG.
+		* @return A string containing the SVG representation of the QR code.
+		*/
+		static std::string SVG_STRING(const QR::QRCODE& qr, int border);
+
+		/**
+		 * @brief Generates an SVG string representation of the QR code with custom foreground and background colors.
+		 *
+		 * @param qr The QR code object to generate the SVG from.
+		 * @param border The size of the border around the QR code in the SVG.
+		 * @param r The red component of the foreground color (0-255).
+		 * @param g The green component of the foreground color (0-255).
+		 * @param b The blue component of the foreground color (0-255).
+		 * @return A string containing the SVG representation of the QR code with the specified colors.
+		 */
+		static std::string SVG_STRING(const QR::QRCODE& qr, int border, int r, int g, int b);
 	};
 
 
