@@ -209,7 +209,7 @@ int main()
 	const char* text = "https://www.youtube.com/";
 	const QRCODE::VERSION::ERROR errorlvl = QRCODE::VERSION::ERROR::HIGH;
 	const QRCODE qr = QRCODE::ENCODE_TEXT(text, errorlvl);
-	IMAGE::DEFAULT::PRINT_QR(qr,255,0,0);
+	IMAGE::DEFAULT::PRINT_QR(qr,16,17,18);
 	std::string svg = IMAGE::SVG::SVG_STRING(qr,4);
 	IMAGE::DEFAULT::PRINT_QR(qr);
 	std::string ppm = toPPMString(qr, 4);

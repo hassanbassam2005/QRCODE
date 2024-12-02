@@ -1,11 +1,21 @@
 #include "Image.hpp"
 
+using namespace QR;
+
 
 inline int IMAGE::COLOR::BLEND_ANSI_COLOR(int r, int g, int b)
 {
 	return 16 + (36 * (r / 51)) + (6 * (g/51)) + b/51; //devided each one by 51 to make sure the number stays between 0 and 255
 }
 
+void QR::IMAGE::COLOR::SET_COLORS(std::vector<unsigned char>& image, int x, int y, int image_size, int r, int g, int b, int a)
+{
+	int index = (y * image_size + x) + 4;// calculate the index for the pixel
+	image[index] = r;
+	image[static_cast<std::vector<uint8_t, std::allocator<uint8_t>>::size_type>(index) + 1] = g;//prevent overflow
+	image[static_cast<std::vector<uint8_t, std::allocator<uint8_t>>::size_type>(index) + 2] = b;
+	image[static_cast<std::vector<uint8_t, std::allocator<uint8_t>>::size_type>(index) + 3] = a;
+}
 
 inline void IMAGE::DEFAULT::PRINT_QR(const QR::QRCODE& qr)
 {
@@ -20,11 +30,11 @@ inline void IMAGE::DEFAULT::PRINT_QR(const QR::QRCODE& qr)
 
 inline void IMAGE::DEFAULT::PRINT_QR(const QR::QRCODE& qr, int r, int g, int b)
 {
-	for (int y = -1; y < qr.SIZE_GETTER() + 1; y++) {
-		for (int x = -1; x < qr.SIZE_GETTER() + 1; x++) {
-			int colored = COLOR::BLEND_ANSI_COLOR(r, g, b);
-			int uncolored = COLOR::BLEND_ANSI_COLOR(255 - r, 255 - g, 255 - b);
+	int colored = COLOR::BLEND_ANSI_COLOR(r, g, b);
+	int uncolored = COLOR::BLEND_ANSI_COLOR(255 - r, 255 - g, 255 - b);
 
+	for (int y = -1,j = 0; y < qr.SIZE_GETTER() + 1; y++,j++) {
+		for (int x = -1,i = 0; x < qr.SIZE_GETTER() + 1; x++, i++) {
 			if ((r == 0 && g == 0 && b == 0) || (r == 255 && g == 255 && b == 255))
 				std::swap(uncolored, colored);
 			if (r == g && b || b == r && g)
@@ -33,7 +43,7 @@ inline void IMAGE::DEFAULT::PRINT_QR(const QR::QRCODE& qr, int r, int g, int b)
 				uncolored = 0;
 			}
 
-			if (qr.GET_MODULE(x, y))
+			if (qr.GET_MODULE(x,y))
 			{
 				std::cout << "\033[48;5;" << colored << "m  \033[0m";
 			}

@@ -331,7 +331,7 @@ namespace QR
 
         long GET_PENALY_SCORE() const;
 
-        const std::vector<std::vector<bool>> MATRIX_GETTER() const;
+        const std::vector<std::vector<bool>>& MATRIX_GETTER() const;
         
     };
 
@@ -935,7 +935,7 @@ inline long QR::QRCODE::GET_PENALY_SCORE() const
 
 }
 
-inline const std::vector<std::vector<bool>> QR::QRCODE::MATRIX_GETTER() const
+inline const std::vector<std::vector<bool>>& QR::QRCODE::MATRIX_GETTER() const
 {
     return Matrix;
 }
