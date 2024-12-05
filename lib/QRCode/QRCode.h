@@ -330,8 +330,6 @@ namespace QR
         void PENALTY_ADD_HISTORY(int currentRunLength, std::array<int, 7>& runHistory) const;
 
         long GET_PENALY_SCORE() const;
-
-        const std::vector<std::vector<bool>>& MATRIX_GETTER() const;
         
     };
 
@@ -787,16 +785,12 @@ inline void QR::QRCODE::DRAW_CODEWORDS(const std::vector<std::uint8_t>& data)
                     Matrix.at(y).at(x) = BITBUFFER::BINARY_BITS(data.at(i >> 3), 7 - static_cast<int>(i & 7));
                     i++;
                 }
-                // If this QR Code has any remainder bits (0 to 7), they were assigned as
-                // 0/false/light by the constructor and are left unchanged by this method
             }
         }
     }
     assert(i == data.size() * 8);
 }
 
-// Places a position marker at the given (x, y) coordinate.
-// This is typically used for the position detection patterns in QR codes.
 inline void QR::QRCODE::POSITION_MARKER(int x, int y)
 {
     for (int dy = -4; dy <= 4; dy++)
@@ -812,8 +806,6 @@ inline void QR::QRCODE::POSITION_MARKER(int x, int y)
     }
 }
 
-// Places an alignment marker at the given (x, y) coordinate.
-// Alignment patterns help the QR code reader adjust for distortion.
 inline void QR::QRCODE::ALIGNMENT_MARKER(int x, int y)
 {
     for (int dy = -2; dy <= 2; dy++)
@@ -933,11 +925,6 @@ inline long QR::QRCODE::GET_PENALY_SCORE() const
     return result;
 
 
-}
-
-inline const std::vector<std::vector<bool>>& QR::QRCODE::MATRIX_GETTER() const
-{
-    return Matrix;
 }
 
 const int QR::QRCODE::PENALTY_N1 = 3;
