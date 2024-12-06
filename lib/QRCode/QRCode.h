@@ -330,6 +330,8 @@ namespace QR
         void PENALTY_ADD_HISTORY(int currentRunLength, std::array<int, 7>& runHistory) const;
 
         long GET_PENALY_SCORE() const;
+
+        const std::vector<std::vector<bool>> MATRIX_GETTER() const;
         
     };
 
@@ -925,6 +927,11 @@ inline long QR::QRCODE::GET_PENALY_SCORE() const
     return result;
 
 
+}
+
+inline const std::vector<std::vector<bool>> QR::QRCODE::MATRIX_GETTER() const
+{
+    return Matrix;
 }
 
 const int QR::QRCODE::PENALTY_N1 = 3;

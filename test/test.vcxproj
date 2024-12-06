@@ -49,11 +49,12 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>C:\Users\think\Downloads\libspng-0.7.4\libspng-0.7.4;C:\Users\think\project\QRcode\QRCODE\lib\Image;C:\Users\think\project\QRcode\QRCODE\lib\QRCode;C:\Users\think\project\QRcode\QRCODE\lib\ReedSolomon;C:\Users\think\project\QRcode\QRCODE\lib\QREncode;C:\Users\think\project\QRcode\QRCODE\lib\BitBuffer;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>C:\Users\think\pngLoader;C:\Users\think\project\QRcode\QRCODE\lib\Image;C:\Users\think\project\QRcode\QRCODE\lib\QRCode;C:\Users\think\project\QRcode\QRCODE\lib\ReedSolomon;C:\Users\think\project\QRcode\QRCODE\lib\QREncode;C:\Users\think\project\QRcode\QRCODE\lib\BitBuffer;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
+      <AdditionalLibraryDirectories>C:\Users\think\Downloads\libspng-0.7.4\libspng-0.7.4\spng;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
@@ -64,13 +65,14 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>C:\Users\think\Downloads\libspng-0.7.4\libspng-0.7.4;C:\Users\think\project\QRcode\QRCODE\lib\Image;C:\Users\think\project\QRcode\QRCODE\lib\QRCode;C:\Users\think\project\QRcode\QRCODE\lib\ReedSolomon;C:\Users\think\project\QRcode\QRCODE\lib\QREncode;C:\Users\think\project\QRcode\QRCODE\lib\BitBuffer;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>C:\Users\think\pngLoader;C:\Users\think\project\QRcode\QRCODE\lib\Image;C:\Users\think\project\QRcode\QRCODE\lib\QRCode;C:\Users\think\project\QRcode\QRCODE\lib\ReedSolomon;C:\Users\think\project\QRcode\QRCODE\lib\QREncode;C:\Users\think\project\QRcode\QRCODE\lib\BitBuffer;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
       <GenerateDebugInformation>true</GenerateDebugInformation>
+      <AdditionalLibraryDirectories>C:\Users\think\Downloads\libspng-0.7.4\libspng-0.7.4\spng;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>

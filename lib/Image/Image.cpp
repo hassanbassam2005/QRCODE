@@ -1,5 +1,6 @@
 #include "Image.hpp"
 
+
 using namespace QR;
 
 int QR::IMAGE::BLEND_ANSI_COLOR(int r, int g, int b)
@@ -86,6 +87,49 @@ std::string IMAGE::SVG_STRING(const QR::QRCODE& qr,int r,int g,int b)
 	sb << "\" fill=\"#000000\""<<uncolored<<"/ >\n";
 	sb << "</svg>\n";
 	return sb.str();
+
+}
+
+void IMAGE::PNG_FILE(const QR::QRCODE& qr,int scale, const char* filename) {
+	int border = 4; // Default border size in modules
+	int pixelSize = qr.SIZE_GETTER() + 2 * border;
+	int imageSize = pixelSize * scale;
+
+	// Initialize image data (white background)
+	std::vector<unsigned char> imageData(imageSize * imageSize);
+
+	// Draw the QR code matrix with scaling and borders
+	for (int row = -1; row < qr.SIZE_GETTER() + 1; ++row) {
+		for (int col = -1; col < qr.SIZE_GETTER() + 1; ++col) {
+			int startX = (border + col) * scale;
+			int startY = (border + row) * scale;
+			if (qr.GET_MODULE(row, col)) {
+				for (int y = startY; y < startY + scale; ++y) {
+					for (int x = startX; x < startX + scale; ++x) {
+						imageData[y * imageSize + x] = 0;
+					}
+				}
+			}
+			else
+			{
+				for (int y = startY; y < startY + scale; ++y) {
+					for (int x = startX; x < startX + scale; ++x) {
+						imageData[y * imageSize + x] = 255;
+					}
+				}
+			}
+		}
+	}
+
+	std::vector<unsigned char> png;
+	unsigned error = lodepng::encode(png, imageData, imageSize, imageSize, LCT_GREY, 8);
+
+	if (!error) {
+		lodepng::save_file(png, filename);
+	}
+	else {
+		std::cerr << "Error saving PNG: " << lodepng_error_text(error) << std::endl;
+	}
 
 }
 

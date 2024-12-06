@@ -2,10 +2,10 @@
 #define IMAGE_HPP
 
 #include "../../lib/QRCode/QRCode.h"
+#include "../pngLoader/lodepng/lodepng.cpp"
 
 #include <cstdint>
 #include <fstream>
-#include "../libspng-0.7.4/spng/spng.h"
 
 namespace QR
 {
@@ -31,6 +31,14 @@ namespace QR
 		*/
 		void PRINT_QR(const QR::QRCODE& qr);
 
+
+		/**
+		* @brief Prints the QR code with any color according to r,g,b.
+		* @param r The red component of the foreground color (0-255).
+		* @param g The green component of the foreground color (0-255).
+		* @param b The blue component of the foreground color (0-255).
+		* @param qr The QR code object to be printed.
+		*/
 		void PRINT_QR(const QR::QRCODE& qr, int r, int g, int b);
 
 		/**
@@ -39,19 +47,30 @@ namespace QR
 		*/
 		void PRINT_QR(const QR::QRCODE& qr, int color);
 
+		/**
+		* @brief Generates an SVG string representation of the QR code with custom foreground and background colors.
+		*
+		* @param qr The QR code object to generate the SVG from.
+		* @param border The size of the border around the QR code in the SVG.
+		* @param r The red component of the foreground color (0-255).
+		* @param g The green component of the foreground color (0-255).
+		* @param b The blue component of the foreground color (0-255).
+		* @return A string containing the SVG representation of the QR code with the specified colors.
+		*/
+		std::string SVG_STRING(const QR::QRCODE& qr, int r, int g, int b);
 
 
 		/**
-		 * @brief Generates an SVG string representation of the QR code with custom foreground and background colors.
-		 *
-		 * @param qr The QR code object to generate the SVG from.
-		 * @param border The size of the border around the QR code in the SVG.
-		 * @param r The red component of the foreground color (0-255).
-		 * @param g The green component of the foreground color (0-255).
-		 * @param b The blue component of the foreground color (0-255).
-		 * @return A string containing the SVG representation of the QR code with the specified colors.
-		 */
-		std::string SVG_STRING(const QR::QRCODE& qr, int r, int g, int b);
+		* @brief Generates a PNG file representation of the QR code.
+		*
+		* @param qrMatrix The QR code object to generate the PNG from.
+		* @param scale The scale factor for each module (pixel) in the QR code.
+		* @param filename The path to the file where the PNG will be saved.
+		*/
+		void PNG_FILE(const QR::QRCODE& qr, int scale, const char* filename);
+
+
+
 	};
 
 }

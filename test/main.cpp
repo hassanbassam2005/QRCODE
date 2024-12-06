@@ -1,4 +1,4 @@
-﻿#include "QRCode.h"
+﻿#include "../lib/QRCode/QRCode.h"
 #include "../../QRCODE/lib/Image/Image.cpp"
 
 #include <iostream>
@@ -14,4 +14,5 @@ int main()
 	const QRCODE qr = QRCODE::ENCODE_TEXT(text, errorlvl);
 	IMAGE image;
 	image.PRINT_QR(qr);
+	image.PNG_FILE(qr, 4, "qr.png");
 }
