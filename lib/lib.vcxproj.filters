@@ -18,9 +18,6 @@
     <ClCompile Include="QRCode\QREncode.h">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="Image\Image.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="QRCode\BitBuffer.h">
@@ -32,7 +29,7 @@
     <ClInclude Include="QRCode\QRCode.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="Image\Image.hpp">
+    <ClInclude Include="Image\Image.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

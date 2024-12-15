@@ -136,17 +136,61 @@ namespace QR
 
         }; //End of VERSION class
     private:
+        /**
+        * @brief Size of the QR code matrix.
+        */
         int size;
+
+        /**
+         * @brief The mask pattern applied to the QR code matrix.
+         */
         int maskPattern;
+
+        /**
+         * @brief The 2D matrix representing the QR code.
+         */
         std::vector<std::vector<bool>> Matrix;
-        std::vector <std::vector<bool>> isMasked;
+
+        /**
+         * @brief A 2D matrix indicating whether each module (pixel) in the QR code has been masked.
+         */
+        std::vector<std::vector<bool>> isMasked;
+
+        /**
+         * @brief The version of the QR code (ranges from 1 to 40).
+         */
         int version;
+
+        /**
+         * @brief The mask currently applied to the QR code for error correction and readability.
+         */
         int mask;
+
+        /**
+         * @brief Error correction level of the QR code.
+         */
         QRCODE::VERSION::ERROR ErrorCorrection;
+
+        /**
+         * @brief Penalty score for pattern N1 in the QR code matrix.
+         */
         static const int PENALTY_N1;
+
+        /**
+         * @brief Penalty score for pattern N2 in the QR code matrix.
+         */
         static const int PENALTY_N2;
+
+        /**
+         * @brief Penalty score for pattern N3 in the QR code matrix.
+         */
         static const int PENALTY_N3;
+
+        /**
+         * @brief Penalty score for pattern N4 in the QR code matrix.
+         */
         static const int PENALTY_N4;
+
     public:
         /**
          * @brief Constructs a QRCODE object with specified version, error correction level, data codewords, and mask pattern.
@@ -321,18 +365,54 @@ namespace QR
         */
         void DRAW_FUNCTIONS();
 
+        /**
+        * @brief Draws the codewords into the QR code matrix.
+        *
+        * @param data A vector of 8-bit unsigned integers representing the QR code data.
+        */
         void DRAW_CODEWORDS(const std::vector<std::uint8_t>& data);
 
+        /**
+         * @brief Counts penalty patterns based on the run history.
+         *
+         * @param runHistory An array storing the lengths of consecutive runs for black and white modules.
+         * @return The penalty score associated with the patterns found in the run history.
+         */
         int PINALTY_COUNT_PATTERNS(const std::array<int, 7>& runHistory) const;
 
+        /**
+         * @brief Terminates the counting of patterns and updates the run history.
+         *
+         * @param currentRunColor The color of the current run (true for black, false for white).
+         * @param currentRunLength The length of the current run.
+         * @param runHistory An array storing the lengths of consecutive runs for black and white modules.
+         * @return The penalty score for the terminated run.
+         */
         int PINALTY_TERMINATE_COUNT(bool currentRunColor, int currentRunLength, std::array<int, 7>& runHistory) const;
 
+        /**
+         * @brief Adds the current run length to the history for penalty calculation.
+         *
+         * @param currentRunLength The length of the current run.
+         * @param runHistory An array storing the lengths of consecutive runs for black and white modules.
+         */
         void PENALTY_ADD_HISTORY(int currentRunLength, std::array<int, 7>& runHistory) const;
 
+        /**
+         * @brief Computes the total penalty score for the QR code matrix.
+         *
+         * @return The total penalty score for the matrix.
+         */
         long GET_PENALY_SCORE() const;
 
+        /**
+         * @brief Retrieves the QR code matrix.
+         *
+         * @return A 2D vector of booleans representing the QR code matrix.
+         */
         const std::vector<std::vector<bool>> MATRIX_GETTER() const;
-        
+
+        const std::vector<std::vector<unsigned char>> CONVERT(const std::vector<std::vector<bool>>& Matrix1);
     };
 
     class data_too_long : public std::length_error
@@ -585,21 +665,16 @@ void QR::QRCODE::printMask()
     }
 }
 
-
-// Sets a module in the QR code matrix at (x, y) with a specified color (0 or 1).
-// 'isColored' determines if the module is filled (1) or empty (0).
-// 'dx' and 'dy' are used as size_t to access MaskMatrix and isMasked arrays.
 inline void QR::QRCODE::SET_MODULE(int x, int y, bool isColored)
 {
     size_t dx = static_cast<size_t>(x);
     size_t dy = static_cast<size_t>(y);
 
-    Matrix[dy][dx] = isColored;  // Set the color of the module in the MaskMatrix.
-    isMasked[dy][dx] = true;         // Mark the module as masked.
+    Matrix[dy][dx] = isColored;  
+    isMasked[dy][dx] = true;
 }
 
-// Retrieves the module state (true/false) at position (x, y) from MaskMatrix.
-// Uses uint8_t casting for input parameters for consistency with array access.
+
 inline bool QR::QRCODE::MODULE(int x, int y) const
 {
     return Matrix[static_cast<size_t>(y)][static_cast<size_t>(x)];
@@ -610,19 +685,16 @@ inline bool QR::QRCODE::GET_MODULE(int x, int y) const
     return 0 <= x && x < size && 0 <= y && y < size && MODULE(x, y);
 }
 
-// Returns the size of the QR code (width/height).
 inline int QR::QRCODE::SIZE_GETTER() const
 {
     return size;
 }
 
-// Returns the version of the QR code.
 inline int QR::QRCODE::VERSION_GETTER() const
 {
     return version;
 }
 
-// Returns the error correction level used in the QR code.
 inline QR::QRCODE::VERSION::ERROR QR::QRCODE::ERROR_CORRECTION() const
 {
     return ErrorCorrection;
@@ -899,7 +971,6 @@ inline long QR::QRCODE::GET_PENALY_SCORE() const
         result += PINALTY_TERMINATE_COUNT(runColor, runY, runHistory) * PENALTY_N3;
     }
 
-    // 2*2 blocks of modules having same color
     for (int y = 0; y < size - 1; y++) {
         for (int x = 0; x < size - 1; x++) {
             bool  color = MODULE(x, y);
@@ -910,7 +981,6 @@ inline long QR::QRCODE::GET_PENALY_SCORE() const
         }
     }
 
-    // Balance of dark and light modules
     int dark = 0;
     for (const std::vector<bool>& row : Matrix) {
         for (bool color : row) {
@@ -918,12 +988,11 @@ inline long QR::QRCODE::GET_PENALY_SCORE() const
                 dark++;
         }
     }
-    int total = size * size;  // Note that size is odd, so dark/total != 1/2
-    // Compute the smallest integer k >= 0 such that (45-5k)% <= dark/total <= (55+5k)%
+    int total = size * size;
     int k = static_cast<int>((std::abs(dark * 20L - total * 10L) + total - 1) / total) - 1;
     assert(0 <= k && k <= 9);
     result += k * PENALTY_N4;
-    assert(0 <= result && result <= 2568888L);  // Non-tight upper bound based on default values of PENALTY_N1, ..., N4
+    assert(0 <= result && result <= 2568888L); 
     return result;
 
 
@@ -932,6 +1001,18 @@ inline long QR::QRCODE::GET_PENALY_SCORE() const
 inline const std::vector<std::vector<bool>> QR::QRCODE::MATRIX_GETTER() const
 {
     return Matrix;
+}
+
+const std::vector<std::vector<unsigned char>> QR::QRCODE::CONVERT(const std::vector<std::vector<bool>>& Matrix1)
+{
+    std::vector<std::vector<unsigned char>> Matrix2(Matrix1.size());
+    for (size_t i = 0; i < Matrix1.size(); ++i) {
+        Matrix2[i].resize(Matrix1[i].size());
+        for (size_t j = 0; j < Matrix1[i].size(); ++j) {
+            Matrix2[i][j] = Matrix1[i][j] ? 0 : 1;
+        }
+    }
+    return Matrix2;
 }
 
 const int QR::QRCODE::PENALTY_N1 = 3;
