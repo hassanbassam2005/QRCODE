@@ -103,8 +103,8 @@ inline void QR::IMAGE::PRINT_QR(QR::QRCODE& qr, int r, int g, int b)
 
 	std::vector<std::vector<unsigned char>> vec = qr.CONVERT(qr.MATRIX_GETTER());
 
-	for (int y = -1, j = -1; y < qr.SIZE_GETTER() + 1; y++, j++) {
-		for (int x = -1, i = -1; x < qr.SIZE_GETTER() + 1; x++, i++) {
+	for (int y = -1, j = 0; y < qr.SIZE_GETTER() + 1; y++, j++) {
+		for (int x = -1, i = 0; x < qr.SIZE_GETTER() + 1; x++, i++) {
 			if (qr.GET_MODULE(x, y))
 			{
 				vec[i][j] = 255;

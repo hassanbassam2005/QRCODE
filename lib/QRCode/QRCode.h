@@ -205,15 +205,41 @@ namespace QR
             std::vector<std::uint8_t>& DataCodeWords,
             int MASK);
 
+        /**
+        * @brief Encodes a text string into a QR code.
+        *
+        * @param text The input text to encode.
+        * @param ecl The error correction level for the QR code.
+        * @return A QR code object representing the encoded text.
+        */
         static QRCODE ENCODE_TEXT(const char* text, QR::QRCODE::VERSION::ERROR ecl);
 
+        /**
+         * @brief Encodes binary data into a QR code.
+         *
+         * @param data A vector of 8-bit unsigned integers representing the binary data to encode.
+         * @param ecl The error correction level for the QR code.
+         * @return A QR code object representing the encoded binary data.
+         */
         static QRCODE ENCODE_BINARY(const std::vector<std::uint8_t>& data, QR::QRCODE::VERSION::ERROR ecl);
 
+        /**
+         * @brief Encodes multiple segments into a QR code.
+         *
+         * @param segments A vector of segments to encode in the QR code.
+         * @param ecl The error correction level for the QR code.
+         * @param minVersion The minimum QR code version to consider (default is 1).
+         * @param maxVersion The maximum QR code version to consider (default is 40).
+         * @param mask The mask pattern to apply (default is -1, which means auto-selection).
+         * @param boostEcl Whether to automatically increase the error correction level if possible (default is true).
+         * @return A QR code object representing the encoded segments.
+         */
         static QRCODE ENCODE_SEGMENT(const std::vector<ENCODE>& segments, VERSION::ERROR ecl,
             int minVersion = 1,
             int maxVersion = 40,
             int mask = -1,
             bool boostEcl = true);
+
 
         /**
          * @brief Places a position marker (finder pattern) at the specified coordinates (x, y).
