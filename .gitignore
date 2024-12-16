@@ -97,7 +97,7 @@ StyleCopReport.xml
 *.pidb
 *.svclog
 *.scc
-*.vcxproj
+*.vcxproj.*
 *.vcxproj.filters
 *.vcxproj.user
 
