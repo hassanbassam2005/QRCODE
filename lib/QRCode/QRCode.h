@@ -283,7 +283,7 @@ namespace QR
         void SET_MODULE(int x, int y, bool isColored);
 
         /**
-         * @brief Retrieves the color status of a module at the specified coordinates (x, y).
+         * @brief Retrieves the color status of a module at the specified coordinates (x, y)
          *
          * @param x The x-coordinate of the module.
          * @param y The y-coordinate of the module.
