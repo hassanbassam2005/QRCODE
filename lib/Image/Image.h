@@ -6,12 +6,13 @@
 
 #include <cstdint>
 #include <fstream>
+#include <sstream>
+#include <iomanip>
 
 namespace QR
 {
 	struct IMAGE
 	{
-		int x, y;
 		/**
 		* @brief Converts RGB values to an 8-bit ANSI color index.
 		*
@@ -49,17 +50,13 @@ namespace QR
 		void PRINT_QR(const QR::QRCODE& qr, int color);
 
 		/**
-		* @brief Generates an SVG string representation of the QR code with custom foreground and background colors.
+		* @brief Generates an SVG string representation of the QR code with black and white colors.
 		*
 		* @param qr The QR code object to generate the SVG from.
 		* @param border The size of the border around the QR code in the SVG.
-		* @param r The red component of the foreground color (0-255).
-		* @param g The green component of the foreground color (0-255).
-		* @param b The blue component of the foreground color (0-255).
 		* @return A string containing the SVG representation of the QR code with the specified colors.
 		*/
-		std::string SVG_STRING(const QR::QRCODE& qr, int r, int g, int b);
-
+		std::string SVG_STRING(const QR::QRCODE& qr);
 
 		/**
 		* @brief Generates a PNG file representation of the QR code.
@@ -101,19 +98,15 @@ inline void QR::IMAGE::PRINT_QR(QR::QRCODE& qr, int r, int g, int b)
 	int colored = BLEND_ANSI_COLOR(r, g, b);
 	int uncolored = BLEND_ANSI_COLOR(255 - r, 255 - g, 255 - b);
 
-	std::vector<std::vector<unsigned char>> vec = qr.CONVERT(qr.MATRIX_GETTER());
-
-	for (int y = -1, j = 0; y < qr.SIZE_GETTER() + 1; y++, j++) {
-		for (int x = -1, i = 0; x < qr.SIZE_GETTER() + 1; x++, i++) {
+	for (int y = -1; y < qr.SIZE_GETTER() + 1; y++) {
+		for (int x = -1; x < qr.SIZE_GETTER() + 1; x++) {
 			if (qr.GET_MODULE(x, y))
 			{
-				vec[i][j] = 255;
-				 std::cout << "\033[48;5;" << static_cast<int>(vec[i][j])<< "m  \033[0m";
+				 std::cout << "\033[48;5;" << colored << "m  \033[0m";
 			}
 			else
 			{
-				vec[i][j] = 0;
-				std::cout << "\033[48;5;" << static_cast<int>(vec[i][j]) << "m  \033[0m";
+				std::cout << "\033[48;5;" << uncolored << "m  \033[0m";
 			}
 		}
 		std::cout << std::endl;
@@ -141,26 +134,15 @@ inline void QR::IMAGE::PRINT_QR(const QR::QRCODE& qr, int color)
 	std::cout << std::endl;
 }
 
-std::string QR::IMAGE::SVG_STRING(const QR::QRCODE& qr, int r, int g, int b)
+std::string QR::IMAGE::SVG_STRING(const QR::QRCODE& qr)
 {
 	int border = 4;
-	int colored = BLEND_ANSI_COLOR(r, g, b);
-	int uncolored = BLEND_ANSI_COLOR(255 - r, 255 - g, 255 - b);
-
-	if ((r == 0 && g == 0 && b == 0) || (r == 255 && g == 255 && b == 255))
-		std::swap(uncolored, colored);
-	if (r == g && b || b == r && g)
-	{
-		colored = 15;
-		uncolored = 0;
-	}
-
-	std::ostringstream sb;
+	std::stringstream sb;
 	sb << "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n";
 	sb << "<!DOCTYPE svg PUBLIC \"-//W3C//DTD SVG 1.1//EN\" \"http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd\">\n";
 	sb << "<svg xmlns=\"http://www.w3.org/2000/svg\" version=\"1.1\" viewBox=\"0 0 ";
 	sb << (qr.SIZE_GETTER() + border * 2) << " " << (qr.SIZE_GETTER() + border * 2) << "\" stroke=\"none\">\n";
-	sb << "\t<rect width=\"100%\" height=\"100%\" fill=\"#FFFFFF\"" << colored << "/>\n";
+	sb << "\t<rect width=\"100%\" height=\"100%\" fill=\"#FFFFFF\"/>\n";
 	sb << "\t<path d=\"";
 	for (int y = 0; y < qr.SIZE_GETTER(); y++) {
 		for (int x = 0; x < qr.SIZE_GETTER(); x++) {
@@ -171,49 +153,14 @@ std::string QR::IMAGE::SVG_STRING(const QR::QRCODE& qr, int r, int g, int b)
 			}
 		}
 	}
-	sb << "\" fill=\"#000000\"" << uncolored << "/ >\n";
+	sb << "\" fill=\"#000000\"/>\n";
 	sb << "</svg>\n";
 	return sb.str();
-
 }
 
-void QR::IMAGE::PNG_FILE(const QR::QRCODE& qr, int scale, const char* filename) {
-	int border = 4;
-	int imageSize = (qr.SIZE_GETTER() + 2 * border) * scale;
-	std::vector<unsigned char> imageData(imageSize * imageSize);
-
-	for (int row = -1; row < qr.SIZE_GETTER() + 1; ++row) {
-		for (int col = -1; col < qr.SIZE_GETTER() + 1; ++col) {
-			int startX = (border + col) * scale;
-			int startY = (border + row) * scale;
-			if (qr.GET_MODULE(row, col)) {
-				for (int y = startY; y < startY + scale; ++y) {
-					for (int x = startX; x < startX + scale; ++x) {
-						imageData[y * imageSize + x] = 255;
-					}
-				}
-			}
-			else
-			{
-				for (int y = startY; y < startY + scale; ++y) {
-					for (int x = startX; x < startX + scale; ++x) {
-						imageData[y * imageSize + x] = 0;
-					}
-				}
-			}
-		}
-	}
-
-	std::vector<unsigned char> png;
-	unsigned error = lodepng::encode(png, imageData, imageSize, imageSize, LCT_GREY, 8);
-
-	if (!error) {
-		lodepng::save_file(png, filename);
-	}
-	else {
-		std::cerr << "Error saving PNG: " << lodepng_error_text(error) << std::endl;
-	}
-
+void QR::IMAGE::PNG_FILE(const QR::QRCODE& qr, int scale, const char* filename) 
+{
+	PNG_FILE(qr,scale,filename, 0, 0, 0);
 }
 
 void QR::IMAGE::PNG_FILE(const QR::QRCODE& qr, int scale, const char* filename, int r, int g, int b)
@@ -259,7 +206,7 @@ void QR::IMAGE::PNG_FILE(const QR::QRCODE& qr, int scale, const char* filename, 
 	}
 
 	lodepng::save_file(png, filename);
-	std::cout << "PNG file saved as: " << filename << std::endl;
+	std::cout << "saved as: " << filename << std::endl;
 }
 
 #endif

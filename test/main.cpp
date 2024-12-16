@@ -13,18 +13,13 @@ int main()
 	const char* text = "https://github.com/hassanbassam2005/QRCODE";
 	const QRCODE::VERSION::ERROR errorlvl = QRCODE::VERSION::ERROR::HIGH;
 	QRCODE qr = QRCODE::ENCODE_TEXT(text, errorlvl);
-	IMAGE image;
+	IMAGE image{};
 	image.PRINT_QR(qr);
 	image.PNG_FILE(qr, 4, "qr.png");
 	image.PNG_FILE(qr, 4, "anotheqr.png",123,34,12);
-	std::vector<std::vector<unsigned char>> vec = qr.CONVERT(qr.MATRIX_GETTER());
-	for (int i = 0; i < vec.size(); i++)
-	{
-		for (int j = 0; j < vec.size(); j++)
-		{
-			std::cout << static_cast<int>(vec[i][j]) << " ";
-		}
-		std::cout << std::endl;
-	}
+	std::string svg = image.SVG_STRING(qr);
+	std::ofstream file("qr.svg");
+	file << svg;
+	file.close();
 }
 
