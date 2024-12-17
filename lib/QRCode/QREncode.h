@@ -26,7 +26,15 @@ namespace QR
             int charCountBits[3];
 
         public:
-            // Constructor to initialize the mode indicator and character count bits for the 3 QR code version groups
+            /**
+             * @brief Constructor to initialize the mode indicator and character count bits
+             * for the 3 QR code version groups.
+             *
+             * @param mode The mode indicator value.
+             * @param charcount1 Character count bits for version group 1.
+             * @param charcount2 Character count bits for version group 2.
+             * @param charcount3 Character count bits for version group 3.
+             */
             MODE(int mode, int charcount1, int charcount2, int charcount3)
                 : MODE_INDICATOR(mode)
             {
@@ -35,47 +43,103 @@ namespace QR
                 charCountBits[2] = charcount3;
             }
 
-            // Predefined constant static instances of MODE to represent each QR code encoding mode
-            static const MODE NUMERIC;       // Numeric mode (0x1)
-            static const MODE ALPHANUMERIC;  // Alphanumeric mode (0x2)
-            static const MODE BYTE;          // Byte mode (0x4)
-            static const MODE KANJI;         // Kanji mode (0x8)
+            /**
+            * @brief Predefined constant static instance representing Numeric mode (0x1).
+            */
+            static const MODE NUMERIC;
+
+            /**
+            * @brief Predefined constant static instance representing Alphanumeric mode (0x2).
+            */
+            static const MODE ALPHANUMERIC;
+
+            /**
+            * @brief Predefined constant static instance representing Byte mode (0x4).
+            */
+            static const MODE BYTE;
+
+            /**
+            * @brief Predefined constant static instance representing Kanji mode (0x8).
+            */
+            static const MODE KANJI;
+
+            /**
+            * @brief Predefined constant static instance representing ECI mode.
+            */
             static const MODE ECI;
-            // Function to check if the given input string consists only of alphanumeric characters (letters and digits).
-            // It returns true if the input is alphanumeric, and false otherwise.
+
+            /**
+            * @brief Checks if the given input string consists only of alphanumeric characters.
+            *
+            * @param input The input string to check.
+            * @return True if the input is alphanumeric, false otherwise.
+            */
             static bool IS_ALPHANUMERIC(const char* input);
 
-            // Function to check if the given input string consists only of numeric characters (digits).
-            // It returns true if the input is numeric, and false otherwise.
+            /**
+            * @brief Checks if the given input string consists only of numeric characters.
+            *
+            * @param input The input string to check.
+            * @return True if the input is numeric, false otherwise.
+            */
             static bool IS_NUMERIC(const char* input);
 
-            // Returns the number of bits required to represent the mode indicator for QR code segments.
-            // The mode indicator specifies the encoding mode of the data (e.g., numeric, alphanumeric, byte).
+            /**
+            * @brief Returns the number of bits required to represent the mode indicator for QR code segments.
+            *
+            * @return The number of bits used for the mode indicator.
+            */
             int MODE_BITS() const;
 
-            // Returns the number of bits required to represent the character count for a given encoding mode
-            // in a specific QR code version. The character count indicates how many characters are encoded
-            // in the QR code and varies depending on the encoding mode and version of the QR code.
+            /**
+            * @brief Returns the number of bits required to represent the character count for
+            * a given encoding mode in a specific QR code version.
+            *
+            * @param version The version of the QR code.
+            * @return The number of bits used for the character count in the specified version.
+            */
             int CHAR_COUNTER_BITS(int version) const;
 
-            // Template function to convert a numeric input of any type to a binary representation.
-            // The function takes an input of type InputType and returns an ENCODE object
-            // that contains the binary representation of the numeric input.
+            /**
+            * @brief Converts a numeric input to its binary representation.
+            *
+            * @param input The input string containing numeric data.
+            * @return An ENCODE object containing the binary representation of the numeric input.
+            */
             static ENCODE NUMERIC_TO_BINARY(const char* input);
 
-            // Function to convert an alphanumeric input of any type to a binary representation.
-            // The function takes an input of type InputType and returns an ENCODE object
-            // that contains the binary representation of the alphanumeric input.
+            /**
+            * @brief Converts an alphanumeric input to its binary representation.
+            *
+            * @param input The input string containing alphanumeric data.
+            * @return An ENCODE object containing the binary representation of the alphanumeric input.
+            */
             static ENCODE ALPHANUMERIC_TO_BINARY(const char* input);
 
-            // Function to convert a byte input of any type to a binary representation.
-            // The function takes an input of type InputType and returns an ENCODE object
-            // that contains the binary representation of the byte input.
+            /**
+            * @brief Converts a byte input to its binary representation.
+            *
+            * @param input A vector of 8-bit unsigned integers representing the byte data.
+            * @return An ENCODE object containing the binary representation of the byte input.
+            */
             static ENCODE BYTE_TO_BINARY(const std::vector<std::uint8_t>& input);
-           
+
+            /**
+            * @brief Converts an ECI input to its binary representation.
+            *
+            * @param input The ECI (Extended Channel Interpretation) value.
+            * @return An ENCODE object containing the binary representation of the ECI input.
+            */
             static ENCODE ECI_TO_BINARY(long input);
 
+            /**
+            * @brief Chooses the appropriate mode for encoding the input string into segments.
+            *
+            * @param input The input string to analyze.
+            * @return A vector of ENCODE objects representing the encoding segments.
+            */
             static std::vector<ENCODE> MODE_CHOOSER(const char* input);
+
             
         };//End of MODE class
 

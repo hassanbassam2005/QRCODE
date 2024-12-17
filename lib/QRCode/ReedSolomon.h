@@ -77,7 +77,6 @@ namespace QR
 inline std::uint8_t QR::REEDSOLOMON::GF_MULTIPLY(uint8_t x, uint8_t y)
 {
     int z = 0;
-    int i = 7;
     std::uint8_t mask = 0x80;
     for (int i = 7; i >= 0; i--) {
         z = (z << 1) ^ ((-(z & mask) >> 7) & 0x11D);
