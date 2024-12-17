@@ -6,6 +6,7 @@
 #include <vector>
 #include <cstdlib>
 #include <cassert>
+
 #include"BitBuffer.h"
 
 // QR namespace that encapsulates the QR code-related functionality
@@ -145,18 +146,27 @@ namespace QR
 
 
     private:
-        // Pointer to a constant MODE object, which represents the encoding mode being used.
-        // This allows access to mode-related properties or methods without modifying the original object.
+        /**
+        * @brief Pointer to a constant MODE object representing the encoding mode being used.
+        *
+        * This allows access to mode-related properties or methods without modifying the original object.
+        */
         const MODE* Mode;
 
-        // Integer that counts the number of bits processed or currently being tracked.
-        // This can be useful for managing the encoding process and ensuring correct bit alignment.
+        /**
+        * @brief Tracks the number of bits processed or currently being managed.
+        *
+        * Useful for managing the encoding process and ensuring correct bit alignment.
+        */
         int Bit_Counter;
-            
-        // Constant vector of boolean values that holds the encoded data.
-        // Using a const vector prevents modification of the data after it is set,
-        // ensuring that the encoded information remains unchanged throughout the object's lifetime.
-       std::vector<bool> Data;
+
+        /**
+        * @brief Constant vector of boolean values holding the encoded data.
+        *
+        * Ensures that the encoded information remains unchanged throughout the object's lifetime.
+        */
+        const std::vector<bool> Data;
+
 
     public:
         // Constructor that initializes the ENCODE object with a constant reference to a MODE object,
