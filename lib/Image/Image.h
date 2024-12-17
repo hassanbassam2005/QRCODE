@@ -142,7 +142,7 @@ std::string QR::IMAGE::SVG_STRING(const QR::QRCODE& qr)
 	sb << "<!DOCTYPE svg PUBLIC \"-//W3C//DTD SVG 1.1//EN\" \"http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd\">\n";
 	sb << "<svg xmlns=\"http://www.w3.org/2000/svg\" version=\"1.1\" viewBox=\"0 0 ";
 	sb << (qr.SIZE_GETTER() + border * 2) << " " << (qr.SIZE_GETTER() + border * 2) << "\" stroke=\"none\">\n";
-	sb << "\t<rect width=\"100%\" height=\"100%\" fill=\"#FFFFFF\"/>\n";
+	sb << "\t<rect width=\"50%\" height=\"50%\" fill=\"#FFFFFF\"/>\n";
 	sb << "\t<path d=\"";
 	for (int y = 0; y < qr.SIZE_GETTER(); y++) {
 		for (int x = 0; x < qr.SIZE_GETTER(); x++) {

@@ -85,36 +85,31 @@ std::uint8_t QR::REEDSOLOMON::GF_MULTIPLY(uint8_t x, uint8_t y)
     return static_cast<uint8_t>(z);
 }
 
-// Computes the divisor polynomial for Reed-Solomon error correction.
 std::vector<std::uint8_t> QR::REEDSOLOMON::COMPUTE_DIVISOR(int a)
 {
     if (a < 1 || a > 255) throw std::domain_error("out of range");
 
     std::vector<std::uint8_t> result(static_cast<size_t>(a));
-    result.at(result.size() - 1) = 1; //Initialize the highest degree term to 1
-    std::uint8_t root = 1; // Start with the generator element
+    result.at(result.size() - 1) = 1;
+    std::uint8_t root = 1;
     for (int i = 0; i < a; i++)
     {
         for (size_t j = 0; j < result.size(); j++)
         {
-            result.at(j) = GF_MULTIPLY(result.at(j), root); // Multiply current coefficients by root
-            if (j + 1 < result.size()) result.at(j) ^= result.at(j + 1); // XOR with next coefficient
+            result.at(j) = GF_MULTIPLY(result.at(j), root); 
+            if (j + 1 < result.size()) result.at(j) ^= result.at(j + 1);
         }
-        root = GF_MULTIPLY(root, 0x02); // Update root for next iteration
+        root = GF_MULTIPLY(root, 0x02);
     }
-    return result; // Return the computed divisor polynomial
+    return result;
 }
 
-
-// This function computes the remainder when dividing the input `data` by the 
-// `divisor` using polynomial division in the Galois Field GF(2^8), which is
-// commonly used in error correction codes like Reed-Solomon.
 inline std::vector<std::uint8_t> QR::REEDSOLOMON::COMPUTE_REMAINDER(
     const std::vector<std::uint8_t>& data, 
     const std::vector<std::uint8_t>& divisor)
 {
     std::vector<uint8_t> result(divisor.size());
-    for (uint8_t b : data) {  // Polynomial division
+    for (uint8_t b : data) { 
         uint8_t factor = b ^ result.at(0);
         result.erase(result.begin());
         result.push_back(0);
