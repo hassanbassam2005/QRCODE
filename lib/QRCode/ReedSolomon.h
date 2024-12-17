@@ -74,18 +74,20 @@ namespace QR
 	};
 }
 
-std::uint8_t QR::REEDSOLOMON::GF_MULTIPLY(uint8_t x, uint8_t y)
+inline std::uint8_t QR::REEDSOLOMON::GF_MULTIPLY(uint8_t x, uint8_t y)
 {
     int z = 0;
+    int i = 7;
+    std::uint8_t mask = 0x80;
     for (int i = 7; i >= 0; i--) {
-        z = (z << 1) ^ ((z >> 7) * 0x11D);
-        z ^= ((y >> i) & 1) * x;
+        z = (z << 1) ^ ((-(z & mask) >> 7) & 0x11D);
+        z ^= (-(y & (1 << i)) >> i) & x;
     }
     assert(z >> 8 == 0);
     return static_cast<uint8_t>(z);
 }
 
-std::vector<std::uint8_t> QR::REEDSOLOMON::COMPUTE_DIVISOR(int a)
+inline std::vector<std::uint8_t> QR::REEDSOLOMON::COMPUTE_DIVISOR(int a)
 {
     if (a < 1 || a > 255) throw std::domain_error("out of range");
 
