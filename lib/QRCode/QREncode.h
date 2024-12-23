@@ -332,7 +332,7 @@ QR::ENCODE QR::ENCODE::MODE::ALPHANUMERIC_TO_BINARY(const char* input)
         }
     }
     if (accumCount > 0)
-        bb.APPEND_BITS(static_cast<std::uint32_t>(accumData), 6);
+        bb.APPEND_BITS(static_cast<std::uint32_t>(accumData), (accumCount == 1) ? 4 : 6);
     return ENCODE(MODE::NUMERIC, charCount, std::move(bb));
 }
 

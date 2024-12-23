@@ -16,11 +16,11 @@ int main()
 	IMAGE image{};
 	image.PRINT_QR(qr);
 	image.PNG_FILE(qr, 4, "qr.png");
-	image.PNG_FILE(qr, 4, "anotheqr.png",123,34,12);
+	image.PNG_FILE(qr, 4, "anotheqr.png",128,128,0);
 	std::string svg = image.SVG_STRING(qr);
 	std::ofstream file("qr.svg");
 	file << svg;
-	std::cout << svg<<std::endl;
+	std::cout << svg <<std::endl;
 	file.close();
 }
 
