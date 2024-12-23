@@ -169,7 +169,7 @@ void QR::IMAGE::PNG_FILE(const QR::QRCODE& qr, int scale, const char* filename, 
 	int pixelSize = qr.SIZE_GETTER() + 2 * border;
 	int imageSize = pixelSize * scale;
 
-	std::vector<unsigned char> imageData(3 * imageSize * imageSize);
+	std::vector<std::uint8_t> imageData(3 * imageSize * imageSize);
 
 	for (int row = -border; row < qr.SIZE_GETTER() + border; ++row) {
 		for (int col = -border; col < qr.SIZE_GETTER() + border; ++col) {

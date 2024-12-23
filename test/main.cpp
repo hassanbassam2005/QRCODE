@@ -20,6 +20,7 @@ int main()
 	std::string svg = image.SVG_STRING(qr);
 	std::ofstream file("qr.svg");
 	file << svg;
+	std::cout << svg<<std::endl;
 	file.close();
 }
 
