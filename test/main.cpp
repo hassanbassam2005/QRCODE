@@ -10,17 +10,12 @@ using namespace QR;
 
 int main()
 {
-	const char* text = "https://github.com/hassanbassam2005/QRCODE";
-	const QRCODE::VERSION::ERROR errorlvl = QRCODE::VERSION::ERROR::HIGH;
-	QRCODE qr = QRCODE::ENCODE_TEXT(text, errorlvl);
+	const char* link = "https://support.broadcom.com/group/ecx/productdownloads?subfamily=VMware+Fusion";
+	const QRCODE::VERSION::ERROR errorlvl = QRCODE::VERSION::ERROR::MEDIUM;
+	QRCODE qr = QRCODE::ENCODE_TEXT(link, errorlvl);
 	IMAGE image{};
 	image.PRINT_QR(qr);
-	image.PNG_FILE(qr, 4, "qr.png");
-	image.PNG_FILE(qr, 4, "anotheqr.png",128,128,0);
-	std::string svg = image.SVG_STRING(qr);
-	std::ofstream file("qr.svg");
-	file << svg;
-	std::cout << svg <<std::endl;
-	file.close();
+	image.PNG_FILE(qr, 6, "qr.png");
+	image.PNG_FILE(qr, 4, "anotheqr.png",128,0,128);
 }
 

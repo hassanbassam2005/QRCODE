@@ -1024,6 +1024,8 @@ inline long QR::QRCODE::GET_PENALY_SCORE() const
 
 }
 
+
+
 inline const std::vector<std::vector<bool>> QR::QRCODE::MATRIX_GETTER() const
 {
     return Matrix;
